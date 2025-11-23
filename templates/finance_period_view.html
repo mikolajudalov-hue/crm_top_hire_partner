@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Период #{{ period.id }}</h1>
+
+<div class="row g-3 mb-4 small">
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="fw-semibold mb-1">Диапазон</div>
+      <div>{{ period.start_date }} — {{ period.end_date }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="fw-semibold mb-1">Кандидатов</div>
+      <div>{{ period.placements_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="fw-semibold mb-1">Сумма</div>
+      <div>{{ '%.2f'|format(total_amount) }} PLN</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="fw-semibold mb-1">Фактура</div>
+      {% if period.invoice_filename %}
+        <div class="text-truncate">{{ period.invoice_filename }}</div>
+      {% else %}
+        <div class="text-muted">ещё не загружена</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<h3 class="mt-4">Кандидаты в периоде</h3>
+<table class="table table-striped align-middle small">
+  <thead>
+    <tr>
+      <th>Старт</th>
+      <th>Кандидат</th>
+      <th>Вакансия</th>
+      <th>Рекрутер</th>
+      <th>Партнёр</th>
+      <th class="text-end">Сумма, PLN</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.start_date }}</td>
+      <td>{{ item.cand_name }}</td>
+      <td>{{ item.job_title }}</td>
+      <td>{{ item.recruiter_name }}</td>
+      <td>{{ item.partner_name }}</td>
+      <td class="text-end">{{ '%.2f'|format(item.amount) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<hr class="my-4">
+
+<h4>Загрузить фактуру</h4>
+<form method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+  <div class="col-md-6">
+    <label class="form-label small">Файл фактуры</label>
+    <input type="file" name="invoice" class="form-control">
+  </div>
+  <div class="col-md-2">
+    <button class="btn btn-primary">Сохранить</button>
+  </div>
+</form>
+{% endblock %}

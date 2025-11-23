@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="card p-3">
+  <div class="d-flex justify-content-between align-items-start">
+    <div>
+      <h2 class="hero-title mb-2">{{ job.title }}
+        {% if job.priority=='urgent' %}<span class="badge text-bg-danger">🔥 Срочно</span>
+        {% elif job.priority=='low' %}<span class="badge text-bg-info">Низкий</span>
+        {% else %}<span class="badge text-bg-secondary">Обычная</span>{% endif %}
+      </h2>
+      <p class="text-muted mb-1">{{ job.location }}</p>
+      <p class="mb-2">{{ job.description }}</p>
+      <p class="fw-semibold">Комиссия партнёру: {{ job.partner_fee_amount }} PLN</p>
+    </div>
+    <div class="d-flex flex-column align-items-end gap-2">
+      <a class="btn btn-primary" href="{{ url_for('job_submit', job_id=job.id) }}">Подать кандидата</a>
+      {% if g.user.role == 'coordinator' %}
+      <form method="post" action="{{ url_for('job_delete', job_id=job.id) }}" onsubmit="return confirm('Удалить вакансию и всех связанных кандидатов? Это действие нельзя отменить.');">
+        <button type="submit" class="btn btn-outline-danger btn-sm">Удалить вакансию</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

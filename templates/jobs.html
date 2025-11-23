@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="hero-title mb-0">Вакансии</h2>
+  {% if g.user.role == 'coordinator' %}
+    <a class="btn btn-primary" href="{{ url_for('job_new') }}">+ Добавить</a>
+  {% endif %}
+</div>
+
+<table class="table table-striped align-middle">
+  <thead>
+    <tr>
+      <th>Название</th>
+      <th>Локация</th>
+      <th>Приоритет</th>
+      <th>Партнёрская комиссия</th>
+      <th class="text-end">Действия</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for j in jobs %}
+    <tr>
+      <td>{{ j.title }}</td>
+      <td>{{ j.location }}</td>
+      <td>
+        {% if j.priority == 'top' %}
+          <span class="badge text-bg-warning">Закреплена</span>
+        {% elif j.priority == 'urgent' %}
+          <span class="badge text-bg-danger">Срочная</span>
+        {% elif j.priority == 'low' %}
+          <span class="badge text-bg-light text-muted">Низкий приоритет</span>
+        {% else %}
+          <span class="badge text-bg-secondary">Обычная</span>
+        {% endif %}
+      </td>
+      <td>{{ j.partner_fee_amount }} PLN</td>
+      <td class="text-end text-nowrap">
+        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('job_view', job_id=j.id) }}">Открыть</a>
+        {% if g.user.role in ['coordinator','recruiter'] %}
+        <form method="post" action="{{ url_for('job_pin', job_id=j.id) }}" class="d-inline">
+          {% if j.priority == 'top' %}
+          <button type="submit" class="btn btn-warning btn-sm ms-1">Убрать с верха</button>
+          {% else %}
+          <button type="submit" class="btn btn-outline-primary btn-sm ms-1">На верх</button>
+          {% endif %}
+        </form>
+        {% endif %}
+        {% if g.user.role == 'coordinator' %}
+        <form method="post" action="{{ url_for('job_delete', job_id=j.id) }}" class="d-inline" onsubmit="return confirm('Удалить вакансию и всех связанных кандидатов? Это действие нельзя отменить.');">
+          <button type="submit" class="btn btn-outline-danger btn-sm ms-1">Удалить</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

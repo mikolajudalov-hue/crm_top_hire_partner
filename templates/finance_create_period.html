@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Создание расчётного периода</h1>
+<form method="post" class="row g-3">
+  <div class="col-md-4">
+    <label class="form-label">Рекрутер</label>
+    <select name="recruiter_id" class="form-select">
+      <option value="">— выберите —</option>
+      {% for r in recruiters %}
+      <option value="{{ r.id }}">{{ r.name }} ({{ r.email }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Партнёр</label>
+    <select name="partner_id" class="form-select">
+      <option value="">— выберите —</option>
+      {% for p in partners %}
+      <option value="{{ p.id }}">{{ p.name }} ({{ p.email }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Начало периода</label>
+    <input type="date" name="start_date" class="form-control">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label">Конец периода</label>
+    <input type="date" name="end_date" class="form-control">
+  </div>
+  <div class="col-12">
+    <button class="btn btn-primary">Создать период</button>
+  </div>
+</form>
+{% endblock %}

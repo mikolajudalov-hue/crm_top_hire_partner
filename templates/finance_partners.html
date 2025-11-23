@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Финансы · Партнёры</h1>
+<p class="text-muted">Сводка по всем партнёрам: сколько закрытий и какая сумма начислена.</p>
+
+<table class="table table-hover align-middle">
+  <thead>
+    <tr>
+      <th>Партнёр</th>
+      <th>E-mail</th>
+      <th>Статус</th>
+      <th class="text-end">Трудоустройств</th>
+      <th class="text-end">Начислено, PLN</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in partners %}
+    {% set stat = stat_map.get(p.id) %}
+    <tr>
+      <td>{{ p.name }}</td>
+      <td>{{ p.email }}</td>
+      <td class="small">
+        {% if p.is_blocked %}
+          <span class="badge bg-danger">заблокирован</span>
+        {% else %}
+          <span class="badge bg-success">активен</span>
+        {% endif %}
+      </td>
+      <td class="text-end">{{ stat.starts if stat else 0 }}</td>
+      <td class="text-end">
+        {% if stat %}
+          {{ '%.2f'|format(stat.total) }}
+        {% else %}
+          0.00
+        {% endif %}
+      </td>
+      <td class="text-end">
+        <a href="{{ url_for('finance_partner_view', pid=p.id) }}" class="btn btn-sm btn-outline-primary">Детали</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

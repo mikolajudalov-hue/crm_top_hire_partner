@@ -1,0 +1,141 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="hero-title mb-3">{{ cand.Candidate.full_name }}</h2>
+<div class="row gy-3">
+  <div class="col-lg-7">
+    {% if cand.partner_blocked %}
+    <div class="alert alert-danger"><strong>Внимание:</strong> партнёр помечен как «не брать кандидатов». Проверьте источник.</div>
+    {% endif %}
+    {% if cand.partner_note %}
+    <p class="small-note mb-2"><strong>Заметка по партнёру:</strong> {{ cand.partner_note }}</p>
+    {% endif %}
+    <div class="card p-3">
+      <div class="d-flex flex-wrap gap-2">
+        {% for st in pipeline %}
+          <span class="badge badge-step {% if cand.Candidate.status==st %}step-active{% endif %}">{{ st }}</span>
+          {% if not loop.last %}<span class="text-muted">→</span>{% endif %}
+        {% endfor %}
+      </div>
+      <hr>
+      <p class="mb-1"><strong>Вакансия:</strong>
+        {% if cand.job_title %}
+          {{ cand.job_title }}
+        {% else %}
+          <span class="text-muted">Не выбрана</span>
+        {% endif %}
+      </p>
+      <p class="mb-1"><strong>Партнёр:</strong> {{ cand.partner_name }}</p>
+      <p class="mb-0"><strong>Статус:</strong> {{ cand.Candidate.status }}</p>
+    </div>
+
+    <div class="card p-3 mt-3">
+      <h5 class="mb-2">Данные кандидата</h5>
+      <dl class="row mb-0 small">
+        <dt class="col-sm-4">Телефон</dt><dd class="col-sm-8">{{ cand.Candidate.phone or '—' }}</dd>
+        <dt class="col-sm-4">Водительские права</dt><dd class="col-sm-8">{% if profile %}{% if profile.has_driver_license %}Есть{% else %}Нет{% endif %}{% else %}—{% endif %}</dd>
+        <dt class="col-sm-4">Возраст</dt><dd class="col-sm-8">{% if profile and profile.age %}{{ profile.age }}{% else %}—{% endif %}</dd>
+        <dt class="col-sm-4">Рабочая обувь</dt><dd class="col-sm-8">{% if profile %}{% if profile.has_work_shoes %}Есть{% else %}Нет{% endif %}{% else %}—{% endif %}</dd>
+        <dt class="col-sm-4">План. приезд</dt><dd class="col-sm-8">{% if profile and profile.planned_arrival %}{{ profile.planned_arrival.date() }}{% else %}—{% endif %}</dd>
+        <dt class="col-sm-4">Гражданство</dt><dd class="col-sm-8">{% if profile and profile.citizenship %}{{ profile.citizenship }}{% else %}—{% endif %}</dd>
+      </dl>
+      <div class="mt-2 small">
+        <strong>Опыт работы:</strong><br>
+        {% if profile and profile.work_experience %}
+          {{ profile.work_experience | replace('\n','<br>') | safe }}
+        {% else %}
+          <span class="text-muted">Не указан.</span>
+        {% endif %}
+      </div>
+      {% if cand_docs %}
+      <hr>
+      <strong class="small d-block mb-1">Документы</strong>
+      <ul class="list-unstyled small mb-0">
+        {% for d in cand_docs %}
+          <li class="mb-1">
+            <span class="fw-semibold">{{ d.label or 'Документ' }}</span>
+            <span class="text-muted"> · {{ d.uploaded_at.date() if d.uploaded_at else '' }}</span>
+            <div><a href="{{ url_for('candidate_doc', doc_id=d.id) }}" target="_blank">{{ d.filename }}</a></div>
+          </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    {% if g.user.role in ['recruiter','coordinator'] %}
+    <div class="card p-3 mt-3">
+      <h5 class="mb-3">Обновить статус</h5>
+      <form method="post" action="{{ url_for('candidate_status', cand_id=cand.Candidate.id) }}">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <select class="form-select" name="status">
+              {% for st in pipeline %}
+                <option value="{{ st }}" {% if cand.Candidate.status==st %}selected{% endif %}>{{ st }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <button class="btn btn-primary w-100">Сохранить</button>
+          </div>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+
+    <div class="card p-3 mt-3">
+      <h5 class="mb-3">Комментарии</h5>
+      {% if comments %}
+        <div class="mb-3">
+          {% for cm, author_name in comments %}
+            <div class="border rounded p-2 mb-2">
+              <div class="d-flex justify-content-between">
+                <strong>{{ author_name }}</strong>
+                <span class="text-muted small">{{ cm.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+              </div>
+              <div class="mt-1">{{ cm.text }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">Пока нет комментариев.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('candidate_comment_add', cand_id=cand.Candidate.id) }}">
+        <div class="mb-2">
+          <textarea class="form-control" name="text" rows="3" placeholder="Написать комментарий..." required></textarea>
+        </div>
+        <button class="btn btn-outline-primary">Добавить комментарий</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card p-3">
+      <h5>Первый рабочий день</h5>
+      {% if g.user.role in ['recruiter','coordinator'] %}
+      <form method="post" action="{{ url_for('candidate_start', cand_id=cand.Candidate.id) }}">
+        <div class="mb-3"><label class="form-label">Дата начала</label><input type="date" name="start_date" class="form-control" required></div>
+        <div class="mb-3"><label class="form-label">Комиссия партнёру (PLN)</label>
+          <input type="number" step="0.01" name="partner_commission" class="form-control" value="{{ placement.partner_commission if placement else cand.partner_fee_amount }}">
+        </div>
+        <div class="mb-3"><label class="form-label">Комиссия рекрутёру (PLN)</label>
+          <input type="number" step="0.01" name="recruiter_commission" class="form-control" value="{{ placement.recruiter_commission if placement else cand.recruiter_fee_amount }}">
+        </div>
+        <button class="btn btn-success">Подтвердить</button>
+      </form>
+      {% else %}
+        <p class="text-muted">Только для рекрутёров и координатора</p>
+      {% endif %}
+    </div>
+  </div>
+  {% if g.user.role == 'coordinator' %}
+  <div class="col-12">
+    <div class="card p-3 mt-3">
+      <h5 class="mb-2">Удалить кандидата</h5>
+      <p class="text-muted mb-3">Кандидат и все связанные с ним выходы будут удалены без возможности восстановления.</p>
+      <form method="post" action="{{ url_for('candidate_delete', cand_id=cand.Candidate.id) }}" onsubmit="return confirm('Удалить этого кандидата и связанные с ним выходы? Это действие нельзя отменить.');">
+        <button type="submit" class="btn btn-outline-danger">Удалить кандидата</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

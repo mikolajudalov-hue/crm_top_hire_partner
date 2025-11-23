@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+  <h1 class="hero-title mb-3">{{ "Новая новость" if not news else "Редактирование новости" }}</h1>
+
+  <form method="post">
+    <div class="mb-3">
+      <label class="form-label">Заголовок</label>
+      <input type="text" name="title" class="form-control" value="{{ news.title if news else '' }}" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Текст</label>
+      <textarea name="body" class="form-control" rows="6">{{ news.body if news else '' }}</textarea>
+      <div class="form-text">Поддерживаются переносы строк. Текст увидят все пользователи.</div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Статус</label>
+      <select name="is_published" class="form-select">
+        <option value="1" {% if not news or news.is_published %}selected{% endif %}>Опубликовано</option>
+        <option value="0" {% if news and not news.is_published %}selected{% endif %}>Черновик</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" type="submit">Сохранить</button>
+    <a href="{{ url_for('admin_news') }}" class="btn btn-link">Отмена</a>
+  </form>
+{% endblock %}

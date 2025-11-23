@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card p-4 kpi-card"><div class="label">Старты (месяц)</div><div class="value">{{ kpi.month_starts }}</div></div></div>
+  <div class="col-md-3"><div class="card p-4 kpi-card"><div class="label">Выплаты партнёрам (месяц)</div><div class="value">{{ '%.2f'|format(kpi.month_partner_sum) }} PLN</div></div></div>
+  <div class="col-md-3"><div class="card p-4 kpi-card"><div class="label">Выплаты рекрутёрам (месяц)</div><div class="value">{{ '%.2f'|format(kpi.month_recruiter_sum) }} PLN</div></div></div>
+  <div class="col-md-3"><div class="card p-4 kpi-card"><div class="label">Подачи (месяц)</div><div class="value">{{ kpi.month_submissions }}</div></div></div>
+</div>
+
+<h2 class="hero-title mb-3">Новые подачи</h2>
+<table class="table table-hover align-middle"><thead><tr><th>Дата</th><th>Кандидат</th><th>Вакансия</th><th>От</th><th>Заметка</th></tr></thead><tbody>
+  {% for c, job_title, submitter_name, submitter_note in submissions %}
+  <tr><td>{{ c.created_at.date() }}</td><td>{{ c.full_name }}</td><td>{{ job_title or 'Не выбрана' }}</td><td>{{ submitter_name }}</td><td class="small-note">{{ submitter_note }}</td></tr>
+  {% endfor %}
+</tbody></table>
+
+<h3 class="mt-4">Недавние трудоустройства</h3>
+<table class="table table-striped align-middle"><thead><tr><th>Дата начала</th><th>Кандидат</th><th>Вакансия</th><th>Рекрутер</th><th>Партнёр</th><th>Комиссия</th></tr></thead><tbody>
+  {% for p, cand_name, job_title, recruiter_name, partner_name in placements %}
+  <tr><td>{{ p.start_date }}</td><td>{{ cand_name }}</td><td>{{ job_title }}</td><td>{{ recruiter_name }}</td><td>{{ partner_name }}</td><td>{{ p.partner_commission }} PLN</td></tr>
+  {% endfor %}
+</tbody></table>
+{% endblock %}

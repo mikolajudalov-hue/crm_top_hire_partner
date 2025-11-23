@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Мои начисления</h1>
+{% if rows %}
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Месяц</th>
+        <th class="text-end">Трудоустройств</th>
+        <th class="text-end">Начислено, PLN</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.ym }}</td>
+        <td class="text-end">{{ r.starts }}</td>
+        <td class="text-end">{{ '%.2f'|format(r.total) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th>Всего</th>
+        <th></th>
+        <th class="text-end">{{ '%.2f'|format(total_all) }}</th>
+      </tr>
+    </tfoot>
+  </table>
+{% else %}
+  <div class="alert alert-info">Пока нет начислений. Как только ваши кандидаты отработают 30+ дней, суммы появятся здесь.</div>
+{% endif %}
+{% endblock %}

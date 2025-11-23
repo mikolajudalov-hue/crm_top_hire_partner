@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="mb-4">
+  {% if user %}Редактировать пользователя{% else %}Создать пользователя{% endif %}
+</h1>
+
+<div class="card p-3">
+  <form method="post">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Имя</label>
+        <input type="text" name="name" class="form-control" value="{{ user.name if user else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" value="{{ user.email if user else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Роль</label>
+        <select name="role" class="form-select">
+          {% for value, label in roles %}
+            <option value="{{ value }}" {% if user and user.role == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">
+          Пароль
+          {% if user %}<span class="text-muted small">(оставьте пустым, чтобы не менять)</span>{% endif %}
+        </label>
+        <input type="password" name="password" class="form-control" autocomplete="new-password" {% if not user %}required{% endif %}>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Активен</label>
+        <select name="is_active" class="form-select">
+          <option value="1" {% if not user or user.is_active %}selected{% endif %}>Да</option>
+          <option value="0" {% if user and not user.is_active %}selected{% endif %}>Нет</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Уровень партнёра</label>
+        <select name="partner_tier" class="form-select">
+          {% set tiers = ['Bronze','Silver','Gold','Platinum','Diamond'] %}
+          {% set current_tier = user.note if user and user.note in tiers else 'Bronze' %}
+          {% for t in tiers %}
+            <option value="{{ t }}" {% if current_tier == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Используется для партнёров как мотивационный статус (Golden, Silver и т.д.).</div>
+      </div>
+    </div>
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        {% if user %}Сохранить{% else %}Создать{% endif %}
+      </button>
+      <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

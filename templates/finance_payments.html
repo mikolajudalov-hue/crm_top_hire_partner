@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Кандидаты к выплате партнёрам</h1>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-auto">
+    <label class="form-label small mb-1">Рассчитать на дату</label>
+    <input type="date" class="form-control" name="as_of" value="{{ as_of }}">
+  </div>
+  <div class="col-auto align-self-end">
+    <button class="btn btn-primary">Пересчитать</button>
+  </div>
+</form>
+
+{% if rows %}
+  <div class="row g-3 mb-4">
+    {% for pid, agg in per_partner.items() %}
+    <div class="col-md-3">
+      <div class="card p-3 small">
+        <div class="fw-semibold">{{ agg.partner_name }}</div>
+        <div class="text-muted">Кандидатов: {{ agg.count }}</div>
+        <div class="mt-2">Сумма: <strong>{{ '%.2f'|format(agg.total) }} PLN</strong></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Партнёр</th>
+        <th>Кандидат</th>
+        <th>Вакансия</th>
+        <th>Старт</th>
+        <th class="text-end">Дней отработано</th>
+        <th class="text-end">Сумма, PLN</th>
+        <th>Счёт</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.partner_name }}</td>
+        <td>{{ r.cand_name }}</td>
+        <td>{{ r.job_title }}</td>
+        <td>{{ r.start_date }}</td>
+        <td class="text-end">{{ r.days_worked }}</td>
+        <td class="text-end">{{ '%.2f'|format(r.amount) }}</td>
+        <td class="small text-muted">{{ r.bank_account or '—' }}</td>
+        <td class="text-end">
+          <a href="{{ url_for('finance_payment_detail', placement_id=r.placement_id) }}" class="btn btn-sm btn-outline-primary">Детали</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <div class="alert alert-info">На выбранную дату нет кандидатов, отработавших 30+ дней без отметки об оплате.</div>
+{% endif %}
+{% endblock %}

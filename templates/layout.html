@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="{{ current_lang or 'ru' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ BRAND }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/tophire.css') }}" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg py-3">
+  <div class="container">
+    <a class="navbar-brand brand" href="{{ url_for('index') }}">{{ BRAND }}</a>
+    {% if g.user %}
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav ms-4 me-auto">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('jobs') }}">{{ "Вакансії" if current_lang=="uk" else "Вакансии" }}</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('candidates') }}">{{ "Кандидати" if current_lang=="uk" else "Кандидаты" }}</a></li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('news_list') }}">
+            {{ "Новини" if current_lang=="uk" else "Новости" }}
+            {% if g.news_unread_count %}
+              <span class="badge text-bg-danger">{{ g.news_unread_count }}</span>
+            {% endif %}
+          </a>
+        </li>
+
+        {# Блок для рекрутеров и координаторов #}
+        {% if g.user.role in ['recruiter','coordinator'] %}
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('inbox') }}">
+              {{ "Вхідні" if current_lang=="uk" else "Входящие" }}
+              {% if g.inbox_count %}
+                <span class="badge text-bg-danger">{{ g.inbox_count }}</span>
+              {% endif %}
+            </a>
+          </li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('reports') }}">{{ "Звіти" if current_lang=="uk" else "Отчёты" }}</a></li>
+        {% endif %}
+
+        {# Блок для финансов и координатора #}
+        {% if g.user.role in ['finance','coordinator'] %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('finance_dashboard') }}">{{ "Фінанси" if current_lang=="uk" else "Финансы" }}</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('finance_partners') }}">{{ "Партнери / виплати" if current_lang=="uk" else "Партнёры / выплаты" }}</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('finance_payments') }}">К выплате</a></li>
+        {% endif %}
+
+        {# Блок для партнёров #}
+        {% if g.user.role == 'partner' %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('partner_profile') }}">{{ "Мій профіль" if current_lang=="uk" else "Мой профиль" }}</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('partner_earnings') }}">{{ "Мої виплати" if current_lang=="uk" else "Мои выплаты" }}</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('partner_reports') }}">{{ "Мої звіти" if current_lang=="uk" else "Мои отчёты" }}</a></li>
+        {% endif %}
+
+        {% if g.user.role == 'coordinator' %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_users') }}">{{ "Користувачі" if current_lang=="uk" else "Пользователи" }}</a></li>
+        {% endif %}
+      </ul>
+      <div class="d-flex align-items-center gap-3">
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            {{ "UA" if current_lang=="uk" else "RU" }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item {% if current_lang=='ru' %}active{% endif %}" href="{{ url_for('set_lang', lang='ru', next=request.path) }}">RU</a></li>
+            <li><a class="dropdown-item {% if current_lang=='uk' %}active{% endif %}" href="{{ url_for('set_lang', lang='uk', next=request.path) }}">UA</a></li>
+          </ul>
+        </div>
+        <span class="text-muted small d-inline-flex align-items-center gap-2">
+          <span>{{ "Привіт" if current_lang=="uk" else "Hi" }}, {{ g.user.name }} ({{ g.user.role }})</span>
+          {% if g.user.role == 'partner' %}
+            {% set tiers = ['Bronze','Silver','Gold','Platinum','Diamond'] %}
+            {% set tier = g.user.note if g.user.note in tiers else 'Bronze' %}
+            <span class="tier-badge tier-badge-nav tier-{{ tier|lower }}">{{ tier }}</span>
+          {% endif %}
+        </span>
+        <a class="btn btn-outline-secondary" href="{{ url_for('logout') }}">{{ "Вийти" if current_lang=="uk" else "Выйти" }}</a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</nav>
+
+<main class="container pb-5">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ 'success' if category=='success' else ('danger' if category=='danger' else 'secondary') }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="py-4 mt-5 border-top">
+  <div class="container d-flex justify-content-between">
+    <span>© {{ 2025 }} {{ BRAND }}</span>
+    <span class="small-note">{{ "Стримана, зрозуміла CRM для рекрутингу" if current_lang=="uk" else "Сдержанная, понятная CRM для рекрутинга" }}</span>
+  </div>
+</footer>
+</body></html>
