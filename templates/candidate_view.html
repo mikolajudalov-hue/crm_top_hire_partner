@@ -25,6 +25,24 @@
         {% endif %}
       </p>
       <p class="mb-1"><strong>Партнёр:</strong> {{ cand.partner_name }}</p>
+      <p class="mb-1"><strong>Комиссия партнёру по этой подаче:</strong>
+        {% if cand.Candidate.partner_fee_offer %}
+          {{ cand.Candidate.partner_fee_offer }} PLN
+        {% elif cand.partner_fee_amount %}
+          {{ cand.partner_fee_amount }} PLN
+        {% else %}
+          <span class="text-muted">не указана</span>
+        {% endif %}
+      </p>
+      <p class="mb-1"><strong>Комиссия рекрутёру по этой подаче:</strong>
+        {% if cand.Candidate.recruiter_fee_offer %}
+          {{ cand.Candidate.recruiter_fee_offer }} PLN
+        {% elif cand.recruiter_fee_amount %}
+          {{ cand.recruiter_fee_amount }} PLN
+        {% else %}
+          <span class="text-muted">не указана</span>
+        {% endif %}
+      </p>
       <p class="mb-0"><strong>Статус:</strong> {{ cand.Candidate.status }}</p>
     </div>
 
@@ -114,10 +132,10 @@
       <form method="post" action="{{ url_for('candidate_start', cand_id=cand.Candidate.id) }}">
         <div class="mb-3"><label class="form-label">Дата начала</label><input type="date" name="start_date" class="form-control" required></div>
         <div class="mb-3"><label class="form-label">Комиссия партнёру (PLN)</label>
-          <input type="number" step="0.01" name="partner_commission" class="form-control" value="{{ placement.partner_commission if placement else cand.partner_fee_amount }}">
+          <input type="number" step="0.01" name="partner_commission" class="form-control" value="{{ placement.partner_commission if placement else (cand.Candidate.partner_fee_offer or cand.partner_fee_amount) }}">
         </div>
         <div class="mb-3"><label class="form-label">Комиссия рекрутёру (PLN)</label>
-          <input type="number" step="0.01" name="recruiter_commission" class="form-control" value="{{ placement.recruiter_commission if placement else cand.recruiter_fee_amount }}">
+          <input type="number" step="0.01" name="recruiter_commission" class="form-control" value="{{ placement.recruiter_commission if placement else (cand.Candidate.recruiter_fee_offer or cand.recruiter_fee_amount) }}">
         </div>
         <button class="btn btn-success">Подтвердить</button>
       </form>

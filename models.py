@@ -1,6 +1,6 @@
 from datetime import datetime
 import os
-from sqlalchemy import String, Float, Text, Boolean, DateTime, ForeignKey, create_engine
+from sqlalchemy import String, Float, Text, Boolean, DateTime, ForeignKey, Integer, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker, scoped_session
 
 DB_PATH = os.environ.get("DB_PATH", "database.db")
@@ -36,11 +36,25 @@ class Job(Base):
     title: Mapped[str] = mapped_column(String(200))
     location: Mapped[str] = mapped_column(String(200), default="")
     description: Mapped[str] = mapped_column(Text, default="")
+    short_description: Mapped[str] = mapped_column(String(255), default="")
     status: Mapped[str] = mapped_column(String(32), default="active")
     priority: Mapped[str] = mapped_column(String(32), default="normal")  # urgent|normal|low
+    # Требования по кандидату
+    gender_preference: Mapped[str] = mapped_column(String(32), default="")  # m/f/any, хранится как текст
+    age_to: Mapped[int] = mapped_column(Integer, default=0)  # 0 = без ограничения
+    # Вознаграждение
     partner_fee_amount: Mapped[float] = mapped_column(Float, default=0.0)
     recruiter_fee_amount: Mapped[float] = mapped_column(Float, default=0.0)
+    promo_multiplier: Mapped[float] = mapped_column(Float, default=1.0)
+    promo_label: Mapped[str] = mapped_column(String(255), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    @property
+    def partner_fee_effective(self) -> float:
+        """Комиссия партнёру с учётом текущего бустера."""
+        base = self.partner_fee_amount or 0.0
+        mult = self.promo_multiplier or 1.0
+        return round(base * mult, 2)
 
 class Candidate(Base):
     __tablename__ = "candidates"
@@ -53,6 +67,8 @@ class Candidate(Base):
     cv_url: Mapped[str] = mapped_column(String(400), default="")
     notes: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(32), default="Подан")
+    partner_fee_offer: Mapped[float] = mapped_column(Float, default=0.0)
+    recruiter_fee_offer: Mapped[float] = mapped_column(Float, default=0.0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 

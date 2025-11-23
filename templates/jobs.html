@@ -7,52 +7,117 @@
   {% endif %}
 </div>
 
-<table class="table table-striped align-middle">
-  <thead>
-    <tr>
-      <th>Название</th>
-      <th>Локация</th>
-      <th>Приоритет</th>
-      <th>Партнёрская комиссия</th>
-      <th class="text-end">Действия</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for j in jobs %}
-    <tr>
-      <td>{{ j.title }}</td>
-      <td>{{ j.location }}</td>
-      <td>
-        {% if j.priority == 'top' %}
-          <span class="badge text-bg-warning">Закреплена</span>
-        {% elif j.priority == 'urgent' %}
-          <span class="badge text-bg-danger">Срочная</span>
-        {% elif j.priority == 'low' %}
-          <span class="badge text-bg-light text-muted">Низкий приоритет</span>
-        {% else %}
-          <span class="badge text-bg-secondary">Обычная</span>
-        {% endif %}
-      </td>
-      <td>{{ j.partner_fee_amount }} PLN</td>
-      <td class="text-end text-nowrap">
-        <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('job_view', job_id=j.id) }}">Открыть</a>
-        {% if g.user.role in ['coordinator','recruiter'] %}
-        <form method="post" action="{{ url_for('job_pin', job_id=j.id) }}" class="d-inline">
-          {% if j.priority == 'top' %}
-          <button type="submit" class="btn btn-warning btn-sm ms-1">Убрать с верха</button>
-          {% else %}
-          <button type="submit" class="btn btn-outline-primary btn-sm ms-1">На верх</button>
+<style>
+  .job-card {
+    cursor: default;
+    transition: all 0.15s ease-in-out;
+  }
+  .job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(15, 23, 42, 0.12);
+  }
+  .job-short {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+</style>
+
+<div class="row row-cols-1 row-cols-md-2 g-3">
+{% for j in jobs %}
+  <div class="col">
+    <div class="card p-3 job-card h-100">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <h5 class="mb-1">{{ j.title }}</h5>
+          <div class="small text-muted">{{ j.location }}</div>
+          {% if j.gender_preference or j.age_to %}
+          <div class="small text-muted mt-1">
+            {% if j.gender_preference %}
+              Пол: {% if j.gender_preference == 'male' %}мужчина{% elif j.gender_preference == 'female' %}женщина{% else %}любой{% endif %}
+              {% if j.age_to %} · {% endif %}
+            {% endif %}
+            {% if j.age_to %}
+              возраст до {{ j.age_to }} лет
+            {% endif %}
+          </div>
           {% endif %}
-        </form>
+          {% if j.short_description %}
+          <div class="small mt-2 text-body-secondary job-short">
+            {{ j.short_description }}
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-end small">
+          <div class="mb-1">
+            {% if j.priority == 'top' %}
+              <span class="badge text-bg-warning">Закреплена</span>
+            {% elif j.priority == 'urgent' %}
+              <span class="badge text-bg-danger">Срочная</span>
+            {% elif j.priority == 'low' %}
+              <span class="badge text-bg-light text-muted">Низкий приоритет</span>
+            {% else %}
+              <span class="badge text-bg-secondary">Обычная</span>
+            {% endif %}
+          </div>
+          <div>
+            {% if j.status == 'inactive' %}
+              <span class="badge text-bg-light text-muted">Не актуальная</span>
+            {% elif j.status == 'active' %}
+              <span class="badge text-bg-success">Актуальная</span>
+            {% else %}
+              <span class="badge text-bg-secondary">{{ j.status }}</span>
+            {% endif %}
+          </div>
+          {% if j.promo_multiplier and j.promo_multiplier > 1 %}
+            <div class="mt-1">
+              <span class="badge text-bg-warning">✨ Акция x{{ j.promo_multiplier|round(2) }}</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="fw-semibold">Партнёрская комиссия:</div>
+        {% if j.promo_multiplier and j.promo_multiplier > 1 %}
+          <div class="d-flex flex-column">
+            <div>
+              <span class="text-decoration-line-through text-muted small me-1">{{ j.partner_fee_amount }} PLN</span>
+              <strong>{{ (j.partner_fee_amount * j.promo_multiplier)|round(2) }} PLN</strong>
+            </div>
+            {% if j.promo_label %}
+              <div class="small text-warning-emphasis">✨ {{ j.promo_label }}</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <strong>{{ j.partner_fee_amount }} PLN</strong>
         {% endif %}
-        {% if g.user.role == 'coordinator' %}
-        <form method="post" action="{{ url_for('job_delete', job_id=j.id) }}" class="d-inline" onsubmit="return confirm('Удалить вакансию и всех связанных кандидатов? Это действие нельзя отменить.');">
-          <button type="submit" class="btn btn-outline-danger btn-sm ms-1">Удалить</button>
-        </form>
-        {% endif %}
-      </td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-2">
+        <div class="small text-muted">
+          Создана: {{ j.created_at.strftime('%d.%m.%Y') if j.created_at }}
+        </div>
+        <div class="text-end text-nowrap">
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('job_view', job_id=j.id) }}">Открыть</a>
+          {% if g.user.role in ['coordinator','recruiter'] %}
+          <a class="btn btn-outline-primary btn-sm ms-1" href="{{ url_for('job_edit', job_id=j.id) }}">Редактировать</a>
+          <form method="post" action="{{ url_for('job_pin', job_id=j.id) }}" class="d-inline">
+            {% if j.priority == 'top' %}
+            <button type="submit" class="btn btn-warning btn-sm ms-1">Убрать с верха</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-primary btn-sm ms-1">На верх</button>
+            {% endif %}
+          </form>
+          {% endif %}
+          {% if g.user.role == 'coordinator' %}
+          <form method="post" action="{{ url_for('job_delete', job_id=j.id) }}" class="d-inline" onsubmit="return confirm('Точно удалить вакансию и всех связанных кандидатов? Это действие нельзя отменить.');">
+            <button type="submit" class="btn btn-outline-danger btn-sm ms-1">Удалить</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+</div>
 {% endblock %}

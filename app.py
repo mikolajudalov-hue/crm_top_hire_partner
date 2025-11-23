@@ -96,10 +96,19 @@ def index():
     u = g.user
     ym = date.today().strftime("%Y-%m")
     if u.role == "partner":
-        jobs = db.session.query(Job).filter(Job.status=="active").order_by(
-            case((Job.priority=="top", 0),(Job.priority=="urgent", 1),(Job.priority=="normal", 2), else_=3),
-            Job.created_at.desc()
-        ).limit(50).all()
+        # Показываем партнёру только несколько верхних вакансий на дашборде,
+        # чтобы блок "Мои подачи" всегда был под рукой.
+        jobs = (db.session.query(Job)
+                .filter(Job.status=="active")
+                .order_by(
+                    case((Job.priority=="top", 0),
+                         (Job.priority=="urgent", 1),
+                         (Job.priority=="normal", 2),
+                         else_=3),
+                    Job.created_at.desc()
+                )
+                .limit(4)
+                .all())
 
         # Фильтры для блока «Мои подачи»
         sub_job_id = request.args.get("job_id", type=int)
@@ -233,15 +242,33 @@ def inbox():
             .order_by(Candidate.created_at.desc()).limit(300).all())
     return render_template("inbox.html", rows=rows)
 
+
 @app.route("/jobs")
 @login_required
 def jobs():
-    jobs = db.session.query(Job).filter(Job.status=="active").order_by(
-        case((Job.priority=="top", 0),(Job.priority=="urgent", 1),(Job.priority=="normal", 2), else_=3),
-        Job.created_at.desc()
-    ).limit(200).all()
+    # Для списка вакансий показываем все, кроме удалённых.
+    # "Не актуальные" (status == "inactive") всегда внизу списка.
+    jobs = (
+        db.session.query(Job)
+        .filter(Job.status != "deleted")
+        .order_by(
+            case(
+                (Job.status == "active", 0),
+                (Job.status == "inactive", 1),
+                else_=2,
+            ),
+            case(
+                (Job.priority == "top", 0),
+                (Job.priority == "urgent", 1),
+                (Job.priority == "normal", 2),
+                else_=3,
+            ),
+            Job.created_at.desc(),
+        )
+        .limit(200)
+        .all()
+    )
     return render_template("jobs.html", jobs=jobs)
-
 @app.route("/jobs/<int:job_id>/pin", methods=["POST"])
 @login_required
 @roles_required("coordinator", "recruiter")
@@ -262,13 +289,25 @@ def job_pin(job_id):
 @roles_required("coordinator")
 def job_new():
     if request.method == "POST":
+        gender_pref = (request.form.get("gender_preference") or "").strip()
+        age_to_raw = (request.form.get("age_to") or "").strip()
+        try:
+            age_to_val = int(age_to_raw) if age_to_raw else 0
+        except ValueError:
+            age_to_val = 0
+
         j = Job(
             title=request.form.get("title"," ").strip(),
             location=request.form.get("location"," ").strip(),
             description=request.form.get("description"," ").strip(),
+            short_description=(request.form.get("short_description") or "").strip(),
             priority=request.form.get("priority","normal"),
+            gender_preference=gender_pref,
+            age_to=age_to_val,
             partner_fee_amount=float(request.form.get("partner_fee_amount") or 0),
             recruiter_fee_amount=float(request.form.get("recruiter_fee_amount") or 0),
+            promo_multiplier=float(request.form.get("promo_multiplier") or 1.0),
+            promo_label=(request.form.get("promo_label") or "").strip(),
             status="active"
         )
         db.session.add(j)
@@ -281,8 +320,22 @@ def job_new():
 @login_required
 def job_view(job_id):
     j = db.session.get(Job, job_id)
-    if not j: abort(404)
+    if not j:
+        abort(404)
     return render_template("job_view.html", job=j)
+
+@app.route("/jobs/<int:job_id>/promo", methods=["POST"])
+@login_required
+@roles_required("coordinator")
+def job_promo_update(job_id):
+    j = db.session.get(Job, job_id)
+    if not j:
+        abort(404)
+    j.promo_multiplier = float(request.form.get("promo_multiplier") or 1.0)
+    j.promo_label = (request.form.get("promo_label") or "").strip()
+    db.session.commit()
+    flash("Акция по вакансии обновлена", "success")
+    return redirect(url_for("job_view", job_id=job_id))
 
 @app.route("/jobs/<int:job_id>/delete", methods=["POST"])
 @login_required
@@ -299,6 +352,46 @@ def job_delete(job_id):
     db.session.commit()
     flash("Вакансия помечена как удалённая. Кандидаты сохранены.", "success")
     return redirect(url_for("jobs"))
+
+
+
+@app.route("/jobs/<int:job_id>/edit", methods=["GET","POST"])
+@login_required
+@roles_required("coordinator", "recruiter")
+def job_edit(job_id):
+    j = db.session.get(Job, job_id)
+    if not j or j.status == "deleted":
+        abort(404)
+
+    if request.method == "POST":
+        j.title = (request.form.get("title") or "").strip()
+        j.location = (request.form.get("location") or "").strip()
+        j.description = (request.form.get("description") or "").strip()
+        j.short_description = (request.form.get("short_description") or "").strip()
+        j.priority = request.form.get("priority") or "normal"
+
+        j.gender_preference = (request.form.get("gender_preference") or "").strip()
+        age_to_raw = (request.form.get("age_to") or "").strip()
+        try:
+            j.age_to = int(age_to_raw) if age_to_raw else 0
+        except ValueError:
+            j.age_to = 0
+
+        j.partner_fee_amount = float(request.form.get("partner_fee_amount") or 0)
+        j.recruiter_fee_amount = float(request.form.get("recruiter_fee_amount") or 0)
+        j.promo_multiplier = float(request.form.get("promo_multiplier") or 1.0)
+        j.promo_label = (request.form.get("promo_label") or "").strip()
+
+        status = (request.form.get("status") or "active").strip()
+        if status not in ("active", "inactive"):
+            status = "active"
+        j.status = status
+
+        db.session.commit()
+        flash("Вакансия обновлена", "success")
+        return redirect(url_for("job_view", job_id=j.id))
+
+    return render_template("job_edit.html", job=j)
 
 @app.route("/jobs/<int:job_id>/submit", methods=["GET","POST"])
 @login_required
@@ -331,6 +424,10 @@ def job_submit(job_id):
                 planned_arrival = None
         citizenship = (request.form.get("citizenship") or "").strip()
 
+        # Фиксируем комиссию на момент подачи (с учётом текущего бустера)
+        partner_offer = (j.partner_fee_amount or 0.0) * (j.promo_multiplier or 1.0)
+        recruiter_offer = j.recruiter_fee_amount or 0.0
+
         c = Candidate(
             job_id = j.id,
             submitter_id = g.user.id,
@@ -340,6 +437,8 @@ def job_submit(job_id):
             cv_url = "",
             notes = "",
             status = "Подан",
+            partner_fee_offer = partner_offer,
+            recruiter_fee_offer = recruiter_offer,
             created_at = datetime.utcnow()
         )
         db.session.add(c)
@@ -624,8 +723,8 @@ def finance_partners():
                    COUNT(p.id) AS starts,
                    COALESCE(SUM(
                      CASE 
-                       WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN j.partner_fee_amount
-                       WHEN p.partner_commission IS NOT NULL THEN p.partner_commission
+                       WHEN p.partner_commission IS NOT NULL AND p.partner_commission > 0 THEN p.partner_commission
+                       WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN j.partner_fee_amount * COALESCE(j.promo_multiplier, 1)
                        ELSE 0 END
                    ), 0) AS total
             FROM placements p
@@ -662,8 +761,8 @@ def finance_partner_view(pid):
               COUNT(p.id) AS starts,
               COALESCE(SUM(
                 CASE 
-                  WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN j.partner_fee_amount
-                  WHEN p.partner_commission IS NOT NULL THEN p.partner_commission
+                  WHEN p.partner_commission IS NOT NULL AND p.partner_commission > 0 THEN p.partner_commission
+                  WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN j.partner_fee_amount * COALESCE(j.promo_multiplier, 1)
                   ELSE 0 END
               ),0) AS total
             FROM placements p
@@ -707,8 +806,9 @@ def finance_payments():
               u.id AS partner_id,
               u.bank_account AS bank_account,
               CASE 
-                WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN j.partner_fee_amount
-                WHEN p.partner_commission IS NOT NULL THEN p.partner_commission
+                WHEN p.partner_commission IS NOT NULL AND p.partner_commission > 0 THEN p.partner_commission
+                WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN 
+                  j.partner_fee_amount * COALESCE(j.promo_multiplier, 1)
                 ELSE 0 END AS amount,
               CAST(julianday(:as_of) - julianday(p.start_date) AS INTEGER) AS days_worked
             FROM placements p
@@ -1062,8 +1162,8 @@ def partner_earnings():
               COUNT(p.id) AS starts,
               COALESCE(SUM(
                 CASE 
-                  WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN j.partner_fee_amount
-                  WHEN p.partner_commission IS NOT NULL THEN p.partner_commission
+                  WHEN p.partner_commission IS NOT NULL AND p.partner_commission > 0 THEN p.partner_commission
+                  WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN j.partner_fee_amount * COALESCE(j.promo_multiplier, 1)
                   ELSE 0 END
               ),0) AS total
             FROM placements p

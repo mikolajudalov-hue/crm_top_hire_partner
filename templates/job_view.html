@@ -7,19 +7,76 @@
         {% if job.priority=='urgent' %}<span class="badge text-bg-danger">🔥 Срочно</span>
         {% elif job.priority=='low' %}<span class="badge text-bg-info">Низкий</span>
         {% else %}<span class="badge text-bg-secondary">Обычная</span>{% endif %}
+        {% if job.status == 'inactive' %}
+          <span class="badge text-bg-light text-muted ms-1">Не актуальная</span>
+        {% endif %}
+        {% if job.promo_multiplier and job.promo_multiplier > 1 %}
+          <span class="badge text-bg-warning ms-1">✨ Акция x{{ job.promo_multiplier|round(2) }}</span>
+        {% endif %}
       </h2>
       <p class="text-muted mb-1">{{ job.location }}</p>
+      <p class="mb-1 small">
+        {% if job.gender_preference %}
+          Пол: {% if job.gender_preference == 'male' %}мужчина{% elif job.gender_preference == 'female' %}женщина{% else %}любой{% endif %}
+          {% if job.age_to %} · {% endif %}
+        {% endif %}
+        {% if job.age_to %}
+          возраст до {{ job.age_to }} лет
+        {% endif %}
+      </p>
+      {% if job.short_description %}
+      <p class="mb-1 text-body-secondary">{{ job.short_description }}</p>
+      {% endif %}
       <p class="mb-2">{{ job.description }}</p>
-      <p class="fw-semibold">Комиссия партнёру: {{ job.partner_fee_amount }} PLN</p>
+      <p class="fw-semibold mb-1">Комиссия партнёру:
+        {% if job.promo_multiplier and job.promo_multiplier > 1 %}
+          <span class="text-decoration-line-through text-muted me-1">{{ job.partner_fee_amount }} PLN</span>
+          <span>{{ (job.partner_fee_amount * job.promo_multiplier)|round(2) }} PLN</span>
+        {% else %}
+          <span>{{ job.partner_fee_amount }} PLN</span>
+        {% endif %}
+      </p>
+      {% if job.promo_label %}
+      <p class="mb-0 small text-warning-emphasis">📢 {{ job.promo_label }}</p>
+      {% endif %}
     </div>
     <div class="d-flex flex-column align-items-end gap-2">
       <a class="btn btn-primary" href="{{ url_for('job_submit', job_id=job.id) }}">Подать кандидата</a>
+      {% if g.user.role in ['coordinator','recruiter'] %}
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('job_edit', job_id=job.id) }}">Редактировать</a>
+      {% endif %}
       {% if g.user.role == 'coordinator' %}
-      <form method="post" action="{{ url_for('job_delete', job_id=job.id) }}" onsubmit="return confirm('Удалить вакансию и всех связанных кандидатов? Это действие нельзя отменить.');">
+      <form method="post" action="{{ url_for('job_delete', job_id=job.id) }}" onsubmit="return confirm('Точно удалить вакансию и всех связанных кандидатов? Это действие нельзя отменить.');">
         <button type="submit" class="btn btn-outline-danger btn-sm">Удалить вакансию</button>
       </form>
       {% endif %}
     </div>
   </div>
 </div>
+
+{% if g.user.role == 'coordinator' %}
+<div class="card p-3 mt-3">
+  <h5 class="mb-2">Акция по вакансии</h5>
+  <form method="post" action="{{ url_for('job_promo_update', job_id=job.id) }}" class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label">Бустер для партнёра</label>
+      <select class="form-select" name="promo_multiplier">
+        <option value="1.0" {% if not job.promo_multiplier or job.promo_multiplier <= 1 %}selected{% endif %}>Без бустера</option>
+        <option value="1.2" {% if job.promo_multiplier == 1.2 %}selected{% endif %}>×1.2</option>
+        <option value="1.5" {% if job.promo_multiplier == 1.5 %}selected{% endif %}>×1.5</option>
+        <option value="2.0" {% if job.promo_multiplier == 2.0 %}selected{% endif %}>×2.0</option>
+      </select>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Текст акции</label>
+      <input class="form-control" name="promo_label" value="{{ job.promo_label }}" placeholder="Например: До 31.12 ×1.5 за старт">
+    </div>
+    <div class="col-md-2 d-grid">
+      <button class="btn btn-primary">Сохранить</button>
+    </div>
+  </form>
+  <p class="small text-muted mt-2 mb-0">Все новые подачи будут считать комиссию по текущей акции. Уже созданные кандидаты сохранят свою сумму.</p>
+</div>
+{% endif %}
+
 {% endblock %}
