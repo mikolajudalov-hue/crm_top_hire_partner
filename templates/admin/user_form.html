@@ -48,6 +48,14 @@
         </select>
         <div class="form-text">Используется для партнёров как мотивационный статус (Golden, Silver и т.д.).</div>
       </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Расчётный день (для партнёра)</label>
+        <input type="number" name="settlement_day" min="1" max="28"
+               class="form-control"
+               value="{% if user and user.settlement_day %}{{ user.settlement_day }}{% else %}10{% endif %}">
+        <div class="form-text">День месяца, когда формируются выплаты этому партнёру (1–28).</div>
+      </div>
     </div>
     <div class="mt-4 d-flex gap-2">
       <button type="submit" class="btn btn-primary">

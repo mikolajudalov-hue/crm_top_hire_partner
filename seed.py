@@ -18,7 +18,7 @@ def ensure_user(name,email,pwd,role,note="",blocked=False):
         db.session.add(u); db.session.commit()
     return u
 
-admin = ensure_user("Координатор", "admin@example.com", "admin123", "coordinator", note="Главный аккаунт")
+admin = ensure_user("Админ", "admin@example.com", "admin123", "coordinator", note="Главный аккаунт")
 recruiters = [
     ensure_user("Мария (HR)", "recruiter1@example.com", "recruit123", "recruiter", note="Аккуратно проверяет документы"),
     ensure_user("Андрей (HR)", "recruiter2@example.com", "recruit234", "recruiter", note="Любит быстрые созвоны"),

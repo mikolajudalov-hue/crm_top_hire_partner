@@ -1,0 +1,226 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h1 class="hero-title mb-3">Кабинет партнёра: как здесь всё устроено</h1>
+        <p class="text-muted mb-3">
+          Здесь вы найдёте краткую инструкцию по работе с системой и сможете сразу понять,
+          где вакансии, где кандидаты, как считать выплаты и что значат статусы.
+        </p>
+
+        <h5 class="mb-2">1. Главное меню</h5>
+        <p class="mb-2">
+          В верхнем меню вы увидите основные разделы:
+        </p>
+        <ul>
+          <li><strong>Вакансии</strong> &mdash; все открытые позиции, на которые вы можете подавать кандидатов.</li>
+          <li><strong>Кандидаты</strong> &mdash; список всех людей, которых вы подали, со статусами и комментариями.</li>
+          <li><strong>Финансы</strong> &mdash; информация о комиссиях и выплатах.</li>
+          <li><strong>Профиль</strong> &mdash; ваши реквизиты, расчётный день и документы.</li>
+          <li><strong>Инструкция / Relax</strong> &mdash; эта страница с подсказками и зоной для перезагрузки.</li>
+        </ul>
+
+        <h5 class="mt-4 mb-2">2. Работа с вакансиями</h5>
+        <p class="mb-2">
+          В разделе <strong>«Вакансии»</strong> каждая позиция показана в виде компактной карточки:
+        </p>
+        <ul>
+          <li><strong>Название</strong> и город/локация.</li>
+          <li>Краткие требования и условия.</li>
+          <li><strong>Комиссия партнёру</strong> за одного стартовавшего кандидата.</li>
+          <li>Значки «Срочно», «Актуально» и <strong>акции x1.5 / x2.0</strong> с повышенной выплатой.</li>
+        </ul>
+        <p>
+          Чтобы подать кандидата, откройте вакансию и нажмите <strong>«Подать кандидата»</strong>:
+          заполните контактные данные, добавьте важные комментарии и при необходимости
+          прикрепите документы (паспорт, виза, резюме).
+        </p>
+
+        <h5 class="mt-4 mb-2">3. Кандидаты и статусы</h5>
+        <p>
+          В разделе <strong>«Кандидаты»</strong> вы видите только своих людей. Основные статусы:
+        </p>
+        <ul>
+          <li><strong>Подан</strong> &mdash; заявка принята системой.</li>
+          <li><strong>Вышел на работу</strong> &mdash; кандидат приступил к работе.</li>
+          <li><strong>Не вышел</strong> &mdash; не появился в первый день.</li>
+          <li><strong>Отработал месяц</strong> &mdash; выполнил условие для выплаты комиссии.</li>
+          <li><strong>Не отработал</strong> &mdash; ушёл раньше.</li>
+        </ul>
+        <p>
+          В карточке кандидата доступны комментарии, история изменений и раздел с документами.
+          Документы надёжно хранятся на сервере и доступны только вам и ответственным сотрудникам.
+        </p>
+
+        <h5 class="mt-4 mb-2">4. Финансы и выплаты</h5>
+        <p>
+          В разделе <strong>«Финансы»</strong> вы можете смотреть:
+        </p>
+        <ul>
+          <li><strong>«Партнёры / выплаты»</strong> &mdash; какие кандидаты уже вышли на работу и сколько вы за них заработаете.</li>
+          <li><strong>«К выплате»</strong> (для бухгалтерии) &mdash; заявки, которые дошли до момента оплаты.</li>
+          <li><strong>«История выплат»</strong> &mdash; какие суммы и когда уже были переведены.</li>
+        </ul>
+        <p>
+          Выплаты формируются после того, как кандидат отработал установленный срок и бухгалтер отметил выплату в системе.
+          Вся история фиксируется: вы всегда можете вернуться и проверить суммы за любой период.
+        </p>
+
+        <h5 class="mt-4 mb-2">5. Профиль и расчётный день</h5>
+        <p>
+          В разделе <strong>«Профиль»</strong> заполняются реквизиты и юридические данные:
+          банковский счёт, название компании, NIP, адрес и комментарии по выплатам.
+          Там же отображается <strong>расчётный день</strong> &mdash; дата месяца, от которой
+          считается ваш период выплат. При необходимости изменить её вы можете обратиться к администратору.
+        </p>
+
+        <h5 class="mt-4 mb-2">6. Быстрый чек-лист для нового партнёра</h5>
+        <ol>
+          <li>Заполните профиль и реквизиты.</li>
+          <li>Ознакомьтесь с активными вакансиями.</li>
+          <li>Подайте первых кандидатов на подходящие позиции.</li>
+          <li>Следите за статусами в разделе «Кандидаты».</li>
+          <li>Проверяйте раздел «Финансы» и историю выплат.</li>
+          <li>Если устали &mdash; загляните в Relax-зону справа.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h5 class="mb-2">Relax-зона</h5>
+        <p class="text-muted small mb-3">
+          2–3 минуты отдыха, чтобы перезагрузить голову между кандидатами и звонками.
+        </p>
+
+        <ul class="nav nav-pills mb-3" id="relaxTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="game-tab" data-bs-toggle="pill" data-bs-target="#game-pane" type="button" role="tab">
+              Мини-игра
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="breath-tab" data-bs-toggle="pill" data-bs-target="#breath-pane" type="button" role="tab">
+              Дыхание
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="relaxTabsContent">
+          <div class="tab-pane fade show active" id="game-pane" role="tabpanel" aria-labelledby="game-tab">
+            <p class="small mb-2">
+              Выберите мини-игру: 2–3 минуты, чтобы отвлечься и перезагрузиться.
+            </p>
+
+            <ul class="nav nav-pills nav-justified mb-2" id="innerGameTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="game-click-tab" data-bs-toggle="pill" data-bs-target="#game-click-pane" type="button" role="tab">
+                  Клик по смайлику
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="game-reaction-tab" data-bs-toggle="pill" data-bs-target="#game-reaction-pane" type="button" role="tab">
+                  Реакция
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="game-memory-tab" data-bs-toggle="pill" data-bs-target="#game-memory-pane" type="button" role="tab">
+                  Память
+                </button>
+              </li>
+            </ul>
+
+            <div class="tab-content" id="innerGameTabsContent">
+              <!-- Game 1: Click -->
+              <div class="tab-pane fade show active" id="game-click-pane" role="tabpanel" aria-labelledby="game-click-tab">
+                <p class="small mb-2">
+                  Кликните по смайлику как можно больше раз за 15 секунд.
+                </p>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div class="small">Счёт: <span id="relaxScore">0</span></div>
+                  <div class="small">Осталось: <span id="relaxTimer">15</span> c</div>
+                </div>
+                <div class="relax-game-area border rounded d-flex align-items-center justify-content-center mb-2" style="height: 150px; position: relative; overflow: hidden;">
+                  <button id="relaxTarget" type="button" class="btn btn-outline-primary btn-sm" style="position:absolute; display:none;">
+                    🙂
+                  </button>
+                </div>
+                <button id="relaxStartBtn" class="btn btn-primary btn-sm w-100">
+                  Запустить игру
+                </button>
+                <p class="small text-muted mt-2 mb-0">
+                  Один раунд &mdash; и возвращаемся к работе, обновлёнными.
+                </p>
+              </div>
+
+              <!-- Game 2: Reaction -->
+              <div class="tab-pane fade" id="game-reaction-pane" role="tabpanel" aria-labelledby="game-reaction-tab">
+                <p class="small mb-2">
+                  Тест на реакцию: дождитесь, когда поле станет зелёным, и кликните как можно быстрее.
+                </p>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div class="small">Ваш результат: <span id="reactionResult">–</span> мс</div>
+                </div>
+                <div id="reactionArea" class="reaction-area border rounded d-flex align-items-center justify-content-center mb-2">
+                  <span class="small" id="reactionHint">Нажмите «Старт теста», затем ждите цвет.</span>
+                </div>
+                <button id="reactionStartBtn" class="btn btn-primary btn-sm w-100">
+                  Старт теста
+                </button>
+                <p class="small text-muted mt-2 mb-0">
+                  Если кликнете слишком рано &mdash; придётся начать заново.
+                </p>
+              </div>
+
+              <!-- Game 3: Memory -->
+              <div class="tab-pane fade" id="game-memory-pane" role="tabpanel" aria-labelledby="game-memory-tab">
+                <p class="small mb-2">
+                  Игра на память: найдите пары карточек за минимальное количество ходов.
+                </p>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div class="small">Ходы: <span id="memoryMoves">0</span></div>
+                  <div class="small">Открытые пары: <span id="memoryMatches">0</span>/2</div>
+                </div>
+                <div class="memory-grid mb-2">
+                  <button class="memory-card btn btn-outline-secondary btn-sm" data-index="0">?</button>
+                  <button class="memory-card btn btn-outline-secondary btn-sm" data-index="1">?</button>
+                  <button class="memory-card btn btn-outline-secondary btn-sm" data-index="2">?</button>
+                  <button class="memory-card btn btn-outline-secondary btn-sm" data-index="3">?</button>
+                </div>
+                <button id="memoryRestartBtn" class="btn btn-primary btn-sm w-100">
+                  Перезапустить игру
+                </button>
+                <p class="small text-muted mt-2 mb-0">
+                  Короткая разминка для мозга перед следующей серией звонков.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane fade" id="breath-pane" role="tabpanel" aria-labelledby="breath-tab">
+            <p class="small mb-2">
+              Короткое упражнение на дыхание: вдох &mdash; задержка &mdash; выдох.
+            </p>
+            <div class="d-flex justify-content-center mb-2">
+              <div class="breath-circle-wrapper">
+                <div class="breath-circle" id="breathCircle"></div>
+              </div>
+            </div>
+            <p class="text-center small mb-1" id="breathPhase">Нажмите «Старт»</p>
+            <button id="breathStartBtn" class="btn btn-outline-primary btn-sm w-100 mb-1">
+              Старт дыхания
+            </button>
+            <p class="small text-muted mb-0 text-center">
+              Вдох 4 секунды &rarr; задержка 4 &rarr; выдох 6. Повторите 5–7 циклов.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

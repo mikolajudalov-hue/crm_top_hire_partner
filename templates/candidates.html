@@ -22,6 +22,16 @@
         {% endfor %}
       </select>
     </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Партнёр (от кого заявка)</label>
+      <select class="form-select" name="partner_id">
+        <option value="">Все</option>
+        {% for pid, pname in partners %}
+          <option value="{{ pid }}" {% if current.partner_id==pid %}selected{% endif %}>{{ pname }}</option>
+        {% endfor %}
+      </select>
+    </div>
     <div class="col-md-3">
       <label class="form-label">Статус</label>
       <select class="form-select" name="status">

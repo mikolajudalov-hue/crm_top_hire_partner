@@ -30,6 +30,14 @@
         <textarea name="payout_note" class="form-control" rows="2">{{ user.payout_note }}</textarea>
       </div>
 
+      <div class="mb-3">
+        <label class="form-label small">Расчётный день (дата выплаты)</label>
+        <input type="number" min="1" max="28"
+               class="form-control"
+               value="{{ user.settlement_day or 10 }}" disabled>
+        <div class="form-text">День месяца, от которого будут считаться расчётные периоды. Меняется админом.</div>
+      </div>
+
       <h5 class="card-title mt-3">Документы</h5>
       <div class="mb-2">
         <label class="form-label small">Название документа</label>

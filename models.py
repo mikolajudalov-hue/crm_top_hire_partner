@@ -28,6 +28,9 @@ class User(Base):
     address: Mapped[str] = mapped_column(Text, default="")
     payout_note: Mapped[str] = mapped_column(Text, default="")
 
+    # Расчётный день месяца для выплат партнёру (1–28)
+    settlement_day: Mapped[int] = mapped_column(Integer, default=10)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 class Job(Base):

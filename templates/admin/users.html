@@ -20,12 +20,18 @@
         </tr>
       </thead>
       <tbody>
+        {% set role_labels = {
+          "partner": "Партнёр",
+          "recruiter": "Рекрутер",
+          "coordinator": "Админ",
+          "finance": "Финансы"
+        } %}
         {% for u in users %}
         <tr>
           <td>{{ u.id }}</td>
           <td>{{ u.name }}</td>
           <td>{{ u.email }}</td>
-          <td>{{ u.role }}</td>
+          <td>{{ role_labels.get(u.role, u.role) }}</td>
           <td>
             {% if u.is_active %}
               <span class="badge bg-success">активен</span>
