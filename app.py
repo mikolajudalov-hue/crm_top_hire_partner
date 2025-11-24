@@ -286,7 +286,7 @@ def job_pin(job_id):
 
 @app.route("/jobs/new", methods=["GET","POST"])
 @login_required
-@roles_required("coordinator")
+@roles_required("coordinator", "recruiter")
 def job_new():
     if request.method == "POST":
         gender_pref = (request.form.get("gender_preference") or "").strip()
@@ -326,7 +326,7 @@ def job_view(job_id):
 
 @app.route("/jobs/<int:job_id>/promo", methods=["POST"])
 @login_required
-@roles_required("coordinator")
+@roles_required("coordinator", "recruiter")
 def job_promo_update(job_id):
     j = db.session.get(Job, job_id)
     if not j:
@@ -339,7 +339,7 @@ def job_promo_update(job_id):
 
 @app.route("/jobs/<int:job_id>/delete", methods=["POST"])
 @login_required
-@roles_required("coordinator")
+@roles_required("coordinator", "recruiter")
 def job_delete(job_id):
     j = db.session.get(Job, job_id)
     if not j:
@@ -400,7 +400,7 @@ def job_submit(job_id):
     if not j or j.status!="active": abort(404)
     # Блокировка подачи от запрещённых партнёров
     if g.user.role == "partner" and g.user.is_blocked:
-        flash("Ваш аккаунт помечен как ограниченный: подача кандидатов недоступна. Обратитесь к координатору.", "danger")
+        flash("Ваш аккаунт помечен как ограниченный: подача кандидатов недоступна. Обратитесь к администратору.", "danger")
         return redirect(url_for("index"))
     if request.method == "POST":
         full_name = (request.form.get("full_name") or "").strip()
@@ -479,6 +479,7 @@ def job_submit(job_id):
 def candidates():
     job_id = request.args.get("job_id", type=int)
     recruiter_id = request.args.get("recruiter_id", type=int)
+    partner_id = request.args.get("partner_id", type=int)
     status = request.args.get("status")
     min_fee = request.args.get("min_fee", type=float)
     max_fee = request.args.get("max_fee", type=float)
@@ -504,6 +505,8 @@ def candidates():
     if recruiter_id is not None:
         sub = select(Placement.candidate_id).where(Placement.recruiter_id==recruiter_id)
         q = q.filter(Candidate.id.in_(sub))
+    if partner_id is not None:
+        q = q.filter(Candidate.submitter_id==partner_id)
     if status:
         q = q.filter(Candidate.status==status)
     if min_fee is not None:
@@ -514,6 +517,11 @@ def candidates():
     rows = q.order_by(Candidate.created_at.desc()).limit(400).all()
     jobs = db.session.query(Job.id, Job.title).filter(Job.status=="active").order_by(Job.title.asc()).all()
     recruiters = db.session.query(User.id, User.name).filter(User.role=="recruiter").order_by(User.name.asc()).all()
+    submitter_ids = {c.submitter_id for (c, *_) in rows}
+    if submitter_ids:
+        partners = db.session.query(User.id, User.name).filter(User.id.in_(submitter_ids)).order_by(User.name.asc()).all()
+    else:
+        partners = []
 
     unread_comments = {}
     if g.user:
@@ -530,9 +538,24 @@ def candidates():
                 if (not last_seen) or (cm.created_at > last_seen):
                     unread_comments[cm.candidate_id] = unread_comments.get(cm.candidate_id, 0) + 1
 
-    return render_template("candidates.html", rows=rows, jobs=jobs, recruiters=recruiters, pipeline=PIPELINE,
-                           current={"job_id":job_id,"recruiter_id":recruiter_id,"status":status,"min_fee":min_fee,"max_fee":max_fee},
-                           unread_comments=unread_comments)
+    return render_template(
+        "candidates.html",
+        rows=rows,
+        jobs=jobs,
+        recruiters=recruiters,
+        partners=partners,
+        pipeline=PIPELINE,
+        current={
+            "job_id": job_id,
+            "recruiter_id": recruiter_id,
+            "partner_id": partner_id,
+            "status": status,
+            "min_fee": min_fee,
+            "max_fee": max_fee,
+        },
+        unread_comments=unread_comments,
+    )
+
 
 @app.route("/candidates/<int:cand_id>")
 @login_required
@@ -893,6 +916,89 @@ def finance_payment_detail(placement_id):
     )
 
 
+
+
+@app.route("/finance/history")
+@login_required
+@roles_required("coordinator", "finance")
+def finance_history():
+    """История выплат партнёрам с фильтрами по датам и партнёру."""
+    # Дата «с» и «по» - по умолчанию текущий месяц
+    today = date.today()
+    default_from = today.replace(day=1).strftime("%Y-%m-%d")
+    default_to = today.strftime("%Y-%m-%d")
+
+    from_date = request.args.get("from_date") or default_from
+    to_date = request.args.get("to_date") or default_to
+    partner_id = request.args.get("partner_id", type=int)
+
+    where_extra = ""
+    params = {"from_date": from_date, "to_date": to_date}
+    if partner_id:
+        where_extra = " AND u.id = :partner_id"
+        params["partner_id"] = partner_id
+
+    sql = f"""
+        SELECT 
+          p.id AS placement_id,
+          p.start_date AS start_date,
+          p.partner_paid_at AS paid_at,
+          c.full_name AS cand_name,
+          j.title AS job_title,
+          u.id AS partner_id,
+          u.name AS partner_name,
+          CASE 
+            WHEN p.partner_commission IS NOT NULL AND p.partner_commission > 0 THEN p.partner_commission
+            WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 THEN 
+              j.partner_fee_amount * COALESCE(j.promo_multiplier, 1)
+            ELSE 0 
+          END AS amount
+        FROM placements p
+        JOIN candidates c ON c.id = p.candidate_id
+        JOIN jobs j ON j.id = p.job_id
+        JOIN users u ON u.id = c.submitter_id
+        WHERE p.partner_paid = 1
+          AND p.partner_paid_at IS NOT NULL
+          AND DATE(p.partner_paid_at) >= :from_date
+          AND DATE(p.partner_paid_at) <= :to_date
+          {where_extra}
+        ORDER BY paid_at DESC, partner_name ASC
+    """
+
+    rows = db.session.execute(text(sql), params).mappings().all()
+
+    # Список партнёров для фильтра
+    partners = (
+        db.session.query(User)
+        .filter(User.role == "partner")
+        .order_by(User.name.asc())
+        .all()
+    )
+
+    # Агрегация по партнёрам
+    per_partner = {}
+    total_all = 0.0
+    for r in rows:
+        pid = r["partner_id"]
+        entry = per_partner.setdefault(
+            pid,
+            {"partner_name": r["partner_name"], "total": 0.0, "count": 0},
+        )
+        entry["total"] += r["amount"] or 0.0
+        entry["count"] += 1
+        total_all += r["amount"] or 0.0
+
+    return render_template(
+        "finance_history.html",
+        rows=rows,
+        per_partner=per_partner,
+        partners=partners,
+        from_date=from_date,
+        to_date=to_date,
+        selected_partner_id=partner_id,
+        total_all=total_all,
+    )
+
 @app.route("/finance/periods")
 @login_required
 @roles_required("coordinator", "finance")
@@ -1077,6 +1183,7 @@ def partner_profile():
         u.tax_id = (request.form.get("tax_id") or "").strip()
         u.address = (request.form.get("address") or "").strip()
         u.payout_note = (request.form.get("payout_note") or "").strip()
+
         db.session.commit()
 
         file = request.files.get("doc_file")
@@ -1107,6 +1214,13 @@ def partner_profile():
     return render_template("partner_profile.html", user=u, docs=docs)
 
 
+
+@app.route("/partner/help")
+@login_required
+@roles_required("partner")
+def partner_help():
+    """Страница с инструкцией для партнёра и relax-зоной."""
+    return render_template("partner_help.html")
 @app.route("/candidate-doc/<int:doc_id>")
 @login_required
 def candidate_doc(doc_id):
@@ -1123,14 +1237,46 @@ def candidate_doc(doc_id):
             abort(403)
     elif g.user.role not in ("recruiter", "coordinator", "finance"):
         abort(403)
+
+    # Базовая папка для документов кандидатов
     upload_root = os.path.join(os.path.dirname(__file__), "uploads", "candidate_docs")
-    full_path = os.path.join(upload_root, d.filename)
-    if not os.path.exists(full_path):
+
+    # Возможные варианты расположения файла:
+    #  1) как сейчас сохраняется: "<candidate_id>/<file>"
+    #  2) только имя файла внутри папки кандидата
+    candidates = []
+
+    # Вариант 1: как записано в базе (может уже содержать подкаталог)
+    if d.filename:
+        candidates.append(os.path.join(upload_root, d.filename))
+
+    # Вариант 2: файл лежит в подпапке с id кандидата,
+    # а в базе хранится только имя файла.
+    if d.filename and os.sep not in d.filename and "/" not in d.filename:
+        candidates.append(os.path.join(upload_root, str(d.candidate_id), d.filename))
+
+    # Вариант 3: если путь не найден, но в папке кандидата ровно один файл — пробуем его.
+    cand_dir = os.path.join(upload_root, str(d.candidate_id))
+    try:
+        if os.path.isdir(cand_dir):
+            files = [f for f in os.listdir(cand_dir) if os.path.isfile(os.path.join(cand_dir, f))]
+            if len(files) == 1:
+                candidates.append(os.path.join(cand_dir, files[0]))
+    except OSError:
+        pass
+
+    final_path = None
+    for path in candidates:
+        if path and os.path.exists(path):
+            final_path = path
+            break
+
+    if not final_path:
         flash("Файл документа не найден на сервере.", "danger")
         return redirect(url_for("candidate_view", cand_id=c.id))
-    # d.filename может содержать подкаталог вида "<id>/<file>", send_from_directory это поддерживает
-    return send_from_directory(upload_root, d.filename)
 
+    directory, filename = os.path.split(final_path)
+    return send_from_directory(directory, filename)
 @app.route("/partner-doc/<int:doc_id>")
 @login_required
 def partner_doc(doc_id):
@@ -1198,10 +1344,17 @@ def admin_user_create():
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password") or ""
-        role = request.form.get("role") or "recruiter"
+        role = (request.form.get("role") or "recruiter").strip()
         is_active_val = request.form.get("is_active", "1")
         is_active = is_active_val == "1"
         partner_tier = (request.form.get("partner_tier") or "Bronze").strip()
+        settlement_day_raw = (request.form.get("settlement_day") or "").strip()
+        try:
+            settlement_day = int(settlement_day_raw) if settlement_day_raw else 10
+        except ValueError:
+            settlement_day = 10
+        if settlement_day < 1 or settlement_day > 28:
+            settlement_day = 10
 
         if not email or not password:
             flash("Email и пароль обязательны.", "danger")
@@ -1219,6 +1372,7 @@ def admin_user_create():
             role=role,
             is_active=is_active,
             note=partner_tier,
+            settlement_day=settlement_day,
         )
         db.session.add(user)
         db.session.commit()
@@ -1226,7 +1380,7 @@ def admin_user_create():
         return redirect(url_for("admin_users"))
 
     roles = [
-        ("coordinator", "Координатор"),
+        ("coordinator", "Админ"),
         ("recruiter", "Рекрутер"),
         ("partner", "Партнёр"),
         ("finance", "Бухгалтер"),
@@ -1246,10 +1400,17 @@ def admin_user_edit(user_id):
         name = (request.form.get("name") or "").strip()
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password") or ""
-        role = request.form.get("role") or user.role
+        role = (request.form.get("role") or user.role).strip()
         is_active_val = request.form.get("is_active", "1")
         is_active = is_active_val == "1"
         partner_tier = (request.form.get("partner_tier") or (user.note or "Bronze")).strip()
+        settlement_day_raw = (request.form.get("settlement_day") or "").strip()
+        try:
+            settlement_day = int(settlement_day_raw) if settlement_day_raw else (user.settlement_day or 10)
+        except ValueError:
+            settlement_day = user.settlement_day or 10
+        if settlement_day < 1 or settlement_day > 28:
+            settlement_day = user.settlement_day or 10
 
         if not email:
             flash("Email обязателен.", "danger")
@@ -1269,6 +1430,7 @@ def admin_user_edit(user_id):
         user.role = role
         user.is_active = is_active
         user.note = partner_tier
+        user.settlement_day = settlement_day
 
         if password.strip():
             user.password_hash = generate_password_hash(password)
@@ -1278,7 +1440,7 @@ def admin_user_edit(user_id):
         return redirect(url_for("admin_users"))
 
     roles = [
-        ("coordinator", "Координатор"),
+        ("coordinator", "Админ"),
         ("recruiter", "Рекрутер"),
         ("partner", "Партнёр"),
         ("finance", "Бухгалтер"),
