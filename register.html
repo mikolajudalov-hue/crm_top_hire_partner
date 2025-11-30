@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+{% block title %}{{ BRAND }} — Регистрация{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card card-entity p-4">
+      <h2 class="h5 mb-3">Заявка на регистрацию</h2>
+      <p class="small text-muted mb-3">
+        Заполните форму, и администратор создаст для вас доступ. Мы свяжемся с вами, если нужны будут уточнения.
+      </p>
+      <form method="post">
+        <div class="mb-3">
+          <label class="form-label">Email<span class="text-danger">*</span></label>
+          <input class="form-control" type="email" name="email" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Имя / контактное лицо</label>
+          <input class="form-control" type="text" name="full_name" placeholder="Как к вам обращаться">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Телефон</label>
+          <input class="form-control" type="text" name="phone" placeholder="+48 ...">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Роль</label>
+          <input class="form-control" type="text" value="Партнёр" disabled>
+          <div class="form-text text-muted small">
+            Сейчас регистрация открыта только для партнёров. Администратор создаст аккаунт с этой ролью.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Как вы работаете?<span class="text-danger">*</span></label>
+          <select class="form-select" name="partner_type" required>
+            <option value="">— выберите вариант —</option>
+            <option value="freelancer">Я как физлицо / фрилансер</option>
+            <option value="company">Я от имени фирмы / компании</option>
+          </select>
+          <div class="form-text text-muted small">
+            Это нужно для правильного оформления выплат и аналитики.
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Пароль для входа</label>
+          <input class="form-control" type="password" name="password" placeholder="Придумайте пароль">
+          <div class="form-text text-muted small">
+            Этот пароль будет передан администратору для создания вашего аккаунта. Его можно будет изменить позже.
+          </div>
+        </div>
+
+        
+        <div class="mb-3">
+          <label class="form-label">Ваш рекрутёр</label>
+          <select class="form-select" name="assigned_recruiter_id">
+            <option value="">— не выбран —</option>
+            {% for r in recruiters %}
+              <option value="{{ r.id }}">{{ r.name }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text text-muted small">
+            Если вы уже работаете с рекрутёром, выберите его. Новая заявка будет привязана к этому рекрутёру.
+          </div>
+        </div>
+
+<div class="mb-3">
+          <label class="form-label">Комментарий</label>
+          <textarea class="form-control" name="note" rows="3" placeholder="Кратко опишите, как вы планируете использовать систему."></textarea>
+        </div>
+        <button class="btn btn-primary w-100">Отправить заявку</button>
+      </form>
+      <p class="small text-muted mt-3 mb-0">
+        Уже есть доступ? <a href="{{ url_for('login') }}">Войти</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
