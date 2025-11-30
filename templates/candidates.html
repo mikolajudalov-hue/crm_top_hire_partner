@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="hero-title mb-2">Кандидаты</h2>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label">Вакансия</label>
+      <select class="form-select" name="job_id">
+        <option value="">Все</option>
+        {% for jid, jtitle in jobs %}
+          <option value="{{ jid }}" {% if current.job_id==jid %}selected{% endif %}>{{ jtitle }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Рекрутёр (по стартам)</label>
+      <select class="form-select" name="recruiter_id">
+        <option value="">Все</option>
+        {% for rid, rname in recruiters %}
+          <option value="{{ rid }}" {% if current.recruiter_id==rid %}selected{% endif %}>{{ rname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Партнёр (от кого заявка)</label>
+      <select class="form-select" name="partner_id">
+        <option value="">Все</option>
+        {% for pid, pname in partners %}
+          <option value="{{ pid }}" {% if current.partner_id==pid %}selected{% endif %}>{{ pname }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Статус</label>
+      <select class="form-select" name="status">
+        <option value="">Любой</option>
+        {% for st in pipeline %}
+          <option value="{{ st }}" {% if current.status==st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Комиссия партнёру (EUR)</label>
+      <div class="input-group">
+        <input class="form-control" type="number" step="1" name="min_fee" placeholder="от" value="{{ current.min_fee or '' }}">
+        <span class="input-group-text">—</span>
+        <input class="form-control" type="number" step="1" name="max_fee" placeholder="до" value="{{ current.max_fee or '' }}">
+      </div>
+    </div>
+  </div>
+  <div class="mt-3">
+    <button class="btn btn-primary me-2">Фильтровать</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('candidates.candidates') }}">Сброс</a>
+  </div>
+</form>
+
+<table class="table table-striped align-middle">
+  <thead><tr><th>Дата</th><th>Кандидат</th><th>Вакансия</th><th>От</th><th>Заметка по партнёру</th><th>Статус</th><th>Комиссия</th><th></th></tr></thead>
+  <tbody>
+    {% for c, job_title, submitter_name, submitter_note, partner_fee_base, partner_fee_offer, submitter_blocked in rows %}
+    <tr class="{% if c.status in ['Не вышел','Не отработал'] %}row-status-bad{% elif c.status=='Отработал месяц' %}row-status-good{% endif %}">
+      <td>{{ c.created_at.date() }}</td>
+      <td>{{ c.full_name }}</td>
+      <td>{{ job_title or 'Не выбрана' }}</td>
+      <td>{{ submitter_name }}{% if submitter_blocked %} <span class="badge text-bg-danger ms-1">!</span>{% endif %}</td>
+      <td class="small-note">{{ submitter_note }}</td>
+      <td>
+        <span class="badge badge-step {% if c.status in ['Вышел на работу','Не вышел','Отработал месяц','Не отработал'] %}step-active{% endif %}">{{ c.status }}</span>
+        {% if unread_comments.get(c.id) %}
+          <span class="ms-1 text-warning candidate-unread-star" title="Есть новые комментарии">★</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if partner_fee_offer and partner_fee_base and partner_fee_offer > partner_fee_base %}
+          <span class="text-muted text-decoration-line-through">{{ partner_fee_base }} EUR</span>
+          <span class="ms-1 fw-semibold text-success">{{ partner_fee_offer }} EUR</span>
+        {% elif partner_fee_offer %}
+          {{ partner_fee_offer }} EUR
+        {% elif partner_fee_base %}
+          {{ partner_fee_base }} EUR
+        {% else %}
+          <span class="text-muted">—</span>
+        {% endif %}
+      </td>
+      <td><a class="btn btn-outline-secondary btn-sm" href="{{ url_for('candidates.candidate_view', cand_id=c.id) }}">Открыть</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

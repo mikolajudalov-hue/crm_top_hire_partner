@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="hero-title mb-0">
+    {{ "Історія виплат" if current_lang=="uk" else "История выплат" }}
+  </h1>
+</div>
+
+{% if payouts %}
+  <div class="row g-3 mb-3">
+    <div class="col-md-6">
+      <div class="card p-3 h-100">
+        <div class="text-muted small mb-1">
+          {{ "Всього кандидатів" if current_lang=="uk" else "Всего кандидатов" }}
+        </div>
+        <div class="h3 mb-0">{{ grand_count }}</div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card p-3 h-100">
+        <div class="text-muted small mb-1">
+          {{ "Всього виплачено" if current_lang=="uk" else "Всего выплачено" }}
+        </div>
+        <div class="h3 mb-0">{{ "%.2f"|format(grand_total) }} EUR</div>
+      </div>
+    </div>
+  </div>
+
+  {% for p in payouts %}
+  <div class="card mb-3">
+    <div class="card-body small">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <div class="text-muted small">
+            {{ "Період" if current_lang=="uk" else "Период" }}
+          </div>
+          <div class="fw-bold">
+            {{ p.ym }}
+          </div>
+          <div class="text-muted small">
+            {{ "Дата оплати" if current_lang=="uk" else "Дата оплаты" }}:
+            {{ p.paid_at }}
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small">
+            {{ "Кандидатів" if current_lang=="uk" else "Кандидатов" }}
+          </div>
+          <div class="h5 mb-0">{{ p.count }}</div>
+          <div class="text-muted small">
+            {{ "Сума" if current_lang=="uk" else "Сумма" }}:
+            {{ "%.2f"|format(p.total_amount) }} EUR
+          </div>
+          {% if p.payment_file %}
+          <a href="{{ url_for('finance.finance_payment_file', placement_id=p.example_placement_id) }}"
+             target="_blank"
+             class="btn btn-sm btn-outline-secondary mt-2">
+            {{ "Підтвердження" if current_lang=="uk" else "Подтверждение" }}
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <h6 class="mt-2 mb-2">
+        {{ "Кандидати у виплаті" if current_lang=="uk" else "Кандидаты в этой выплате" }}
+      </h6>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>{{ "Кандидат" if current_lang=="uk" else "Кандидат" }}</th>
+              <th>{{ "Вакансія" if current_lang=="uk" else "Вакансия" }}</th>
+              <th class="text-center">{{ "Старт" if current_lang=="uk" else "Старт" }}</th>
+              <th class="text-end">{{ "Сума, EUR" if current_lang=="uk" else "Сумма, EUR" }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in p.candidates %}
+            <tr>
+              <td>{{ c.candidate_name }}</td>
+              <td>{{ c.job_title }}</td>
+              <td class="text-center">{{ c.start_date }}</td>
+              <td class="text-end">{{ "%.2f"|format(c.amount) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-info">
+    {{ "Ще немає жодної виплати." if current_lang=="uk" else "Пока нет ни одной выплаты." }}
+  </div>
+{% endif %}
+{% endblock %}

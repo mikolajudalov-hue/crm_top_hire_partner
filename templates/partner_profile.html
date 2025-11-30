@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Мой профиль (партнёр)</h1>
+<div class="row g-3">
+  <div class="col-md-6">
+    <form method="post" enctype="multipart/form-data" class="card p-3">
+      <h5 class="card-title">Платёжные данные</h5>
+      <div class="mb-2">
+        <label class="form-label small">Название банка</label>
+        <input type="text" name="bank_name" value="{{ user.bank_name }}" class="form-control">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small">Номер счёта / IBAN</label>
+        <input type="text" name="bank_account" value="{{ user.bank_account }}" class="form-control">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small">Компания</label>
+        <input type="text" name="company_name" value="{{ user.company_name }}" class="form-control">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small">ИНН / NIP / Tax ID</label>
+        <input type="text" name="tax_id" value="{{ user.tax_id }}" class="form-control">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small">Адрес</label>
+        <textarea name="address" class="form-control" rows="2">{{ user.address }}</textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label small">Тип партнёрского аккаунта</label>
+        <select name="partner_type" class="form-select">
+          <option value="freelancer" {% if (user.partner_type or 'freelancer') == 'freelancer' %}selected{% endif %}>Фрилансер</option>
+          <option value="company" {% if user.partner_type == 'company' %}selected{% endif %}>Фирма / Компания</option>
+        </select>
+        <div class="form-text">Нужно для аналитики и отчётов. Не влияет на начисления напрямую.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small">Расчётный день (дата выплаты)</label>
+        <input type="number" min="1" max="28"
+               class="form-control"
+               value="{{ user.settlement_day or 10 }}" disabled>
+        <div class="form-text">День месяца, от которого будут считаться расчётные периоды. Меняется админом.</div>
+      </div>
+
+      <h5 class="card-title mt-3">Документы</h5>
+      <div class="mb-2">
+        <label class="form-label small">Название документа</label>
+        <input type="text" name="doc_label" class="form-control" placeholder="Например: договор, реквизиты">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small">Файл</label>
+        <input type="file" name="doc_file" class="form-control">
+      </div>
+
+      <hr class="my-3">
+      <h5 class="card-title">Смена пароля</h5>
+      <div class="mb-2">
+        <label class="form-label small">Текущий пароль</label>
+        <input type="password" name="current_password" class="form-control" autocomplete="current-password">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small">Новый пароль</label>
+        <input type="password" name="new_password" class="form-control" autocomplete="new-password">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small">Подтверждение нового пароля</label>
+        <input type="password" name="new_password2" class="form-control" autocomplete="new-password">
+      </div>
+      <p class="small text-muted">Если поля нового пароля оставить пустыми, текущий пароль не изменится.</p>
+
+      <button class="btn btn-primary">Сохранить</button>
+    </form>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3 mb-3">
+      <h5 class="card-title">Первый шаг с системой</h5>
+      <ul class="list-unstyled small mb-0">
+        <li class="mb-1">
+          {% if onboarding.profile_filled %}✅{% else %}⬜{% endif %}
+          Заполнить платёжные данные
+        </li>
+        <li class="mb-1">
+          {% if onboarding.has_candidate %}✅{% else %}⬜{% endif %}
+          Привязать первого кандидата
+        </li>
+        <li class="mb-1">
+          {% if onboarding.has_submission %}✅{% else %}⬜{% endif %}
+          Подать первую заявку
+        </li>
+        <li class="mb-1">
+          {% if onboarding.status_updated %}✅{% else %}⬜{% endif %}
+          Отметить статус по первой заявке
+        </li>
+      </ul>
+      {% if onboarding_done %}
+        <p class="mt-2 small text-success mb-0">Онбординг завершён. Спасибо, что заполнили все шаги!</p>
+      {% else %}
+        <p class="mt-2 small text-muted mb-0">Выполните все шаги, чтобы мы могли максимально быстро начислять вам выплаты.</p>
+      {% endif %}
+    </div>
+
+    <div class="card p-3 h-100">
+      <h5 class="card-title">Мои документы</h5>
+      {% if docs %}
+        <ul class="list-unstyled small mb-0">
+          {% for d in docs %}
+            <li class="mb-2">
+              <div class="fw-semibold">{{ d.label or 'Документ' }}</div>
+              <div class="text-muted">{{ d.uploaded_at.date() if d.uploaded_at else '' }}</div>
+              <div class="text-muted"><a href="{{ url_for('partner.partner_doc', doc_id=d.id) }}" target="_blank">{{ d.filename }}</a></div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="small text-muted mb-0">Документы ещё не загружены.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "layout.html" %}{% block content %}
+<h3 class="mb-3">История Relax</h3>
+<p class="text-muted">
+  Здесь отображаются ваши тесты на стресс, дыхательные практики и упражнения, которые вы запускали.
+  Это помогает видеть динамику и напоминать себе о паузах.
+</p>
+
+<table class="table table-sm align-middle">
+  <thead>
+    <tr>
+      <th>Дата</th>
+      <th>Тип</th>
+      <th>Данные</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for h in history %}
+    <tr>
+      <td>{{ h.created_at }}</td>
+      <td>
+        {% if h.type == "stress_test" %}
+          Оценка стресса
+        {% elif h.type == "stress_test_daily" %}
+          Тест 1 — текущий стресс
+        {% elif h.type == "stress_test_burnout" %}
+          Тест 2 — признаки выгорания
+        {% elif h.type == "stress_test_focus" %}
+          Тест 3 — концентрация и отвлечения
+        {% elif h.type == "stress_test_balance" %}
+          Тест 4 — баланс работа/жизнь
+        {% elif h.type == "stress_test_energy" %}
+          Тест 5 — ресурсность и восстановление
+        {% elif h.type == "stress_test_anxiety" %}
+          Тест 6 — уровень тревожности
+        {% elif h.type == "stress" %}
+          Оценка стресса (старый формат)
+        {% elif h.type == "breath" %}
+          Дыхательная практика
+        {% elif h.type == "exercise" %}
+          Упражнение
+        {% else %}
+          {{ h.type }}
+        {% endif %}
+      </td>
+      <td>
+        {% if h.type.startswith("stress_test") or h.type in ["stress"] %}
+          Балл: {{ h.value }}
+        {% else %}
+          {{ h.value }}
+        {% endif %}
+      </td>
+    </tr>
+  {% else %}
+    <tr>
+      <td colspan="3" class="text-muted">Пока здесь пусто. Пройдите любой тест на стресс или запустите любую практику в Relax‑зоне.</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

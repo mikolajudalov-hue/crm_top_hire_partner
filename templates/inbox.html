@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="hero-title mb-3">Входящие заявки</h2>
+<table class="table table-striped align-middle">
+  <thead><tr><th>Дата</th><th>Кандидат</th><th>Вакансия</th><th>От партнёра</th><th>Заметка</th><th></th></tr></thead>
+  <tbody>
+    {% for c, job_title, submitter_name, submitter_note in rows %}
+    <tr>
+      <td>{{ c.created_at.date() }}</td>
+      <td>{{ c.full_name }}</td>
+      <td>{{ job_title or 'Не выбрана' }}</td>
+      <td>{{ submitter_name }}</td>
+      <td class="small-note">{{ submitter_note }}</td>
+      <td><a class="btn btn-outline-secondary btn-sm" href="{{ url_for('candidates.candidate_view', cand_id=c.id) }}">Открыть</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

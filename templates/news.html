@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="hero-title mb-0">{{ "Новини" if current_lang=="uk" else "Новости" }}</h1>
+    {% if g.user.role == "coordinator" %}
+      <a href="{{ url_for('admin.admin_news_create') }}" class="btn btn-primary btn-sm">
+        {{ "Додати новину" if current_lang=="uk" else "Добавить новость" }}
+      </a>
+    {% endif %}
+  </div>
+
+  {% if news_list %}
+    {% for n in news_list %}
+      <div class="card p-3 mb-3 {% if n.id not in read_ids %}border-primary border-2{% endif %}">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <h5 class="mb-0">{{ n.title }}</h5>
+          <small class="text-muted">{{ n.created_at.strftime('%Y-%m-%d %H:%M') if n.created_at else "" }}</small>
+        </div>
+        <div class="mb-2 small text-muted">
+          {% if n.author_id %}
+            {{ "Від адміністратора" if current_lang=="uk" else "От администратора" }}
+          {% endif %}
+        </div>
+        <div class="mb-2">
+          {{ n.body | replace('\n','<br>') | safe }}
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          {% if n.id not in read_ids %}
+            <form method="post" action="{{ url_for('news.news_mark_read', news_id=n.id) }}">
+              <button class="btn btn-sm btn-outline-primary">
+                {{ "Позначити прочитаним" if current_lang=="uk" else "Отметить прочитанным" }}
+              </button>
+            </form>
+            <span class="badge text-bg-danger">{{ "Нове" if current_lang=="uk" else "Новое" }}</span>
+          {% else %}
+            <span class="text-muted small">{{ "Прочитано" if current_lang=="uk" else "Прочитано" }}</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-muted mt-3">{{ "Поки немає новин." if current_lang=="uk" else "Пока нет новостей." }}</p>
+  {% endif %}
+{% endblock %}

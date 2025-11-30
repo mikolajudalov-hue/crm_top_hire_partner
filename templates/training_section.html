@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block title %}{{ section.title }} — Обучение{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <a href="{{ url_for('training.index') }}" class="btn btn-link btn-sm mb-3 ps-0">&larr; Все разделы</a>
+
+  <h1 class="h3 mb-2">{{ section.title }}</h1>
+  {% if section.description %}
+  <p class="text-muted">{{ section.description }}</p>
+  {% endif %}
+
+  {% if not lessons %}
+    <div class="alert alert-warning">
+      В этом разделе пока нет опубликованных уроков.
+    </div>
+  {% else %}
+    <div class="list-group">
+      {% for l in lessons %}
+      <a href="{{ url_for('training.lesson', lesson_id=l.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+        <div>
+          <div class="fw-semibold">
+            {% if progress_ids and l.id in progress_ids %}
+              ✅
+            {% endif %}
+            {{ l.title }}
+          </div>
+          {% if l.estimated_minutes %}
+          <div class="small text-muted">Ориентировочно {{ l.estimated_minutes }} мин.</div>
+          {% endif %}
+        </div>
+        <span class="badge bg-light text-muted border">
+          Урок {{ loop.index }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

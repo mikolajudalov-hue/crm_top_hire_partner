@@ -1,0 +1,152 @@
+{% extends "layout.html" %}
+{% block content %}
+<style>
+  .job-card {
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+  }
+  .job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(15, 23, 42, 0.15);
+  }
+  .job-short {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+  <div>
+    <div class="small text-muted">Партнёр</div>
+    <h1 class="hero-title mb-1">{{ g.user.name }}</h1>
+  </div>
+  <div>
+    {% set tiers = ['Bronze','Silver','Gold','Platinum','Diamond'] %}
+    {% set tier = g.user.note if g.user.note in tiers else 'Bronze' %}
+    <div class="tier-badge tier-{{ tier|lower }}">{{ tier }}</div>
+  </div>
+</div>
+{% if partner_note %}
+<div class="alert alert-{{ 'danger' if 'не брать' in partner_note.lower() else 'success' }}">
+  <strong>Заметка по аккаунту:</strong> {{ partner_note }}
+</div>
+{% endif %}
+<div class="row g-3 mb-4">
+  <div class="col-md-3"><div class="card p-4 kpi-card text-center">
+    <div class="label small text-muted">Мои подачи (месяц)</div>
+    <div class="value display-6">{{ kpi.my_submissions }}</div>
+  </div></div>
+  <div class="col-md-3"><div class="card p-4 kpi-card text-center">
+    <div class="label small text-muted">Мои старты (месяц)</div>
+    <div class="value display-6">{{ kpi.my_starts }}</div>
+  </div></div>
+  <div class="col-md-3"><div class="card p-4 kpi-card text-center">
+    <div class="label small text-muted">Мой заработок (месяц)</div>
+    <div class="value h3 mb-0">{{ "%.2f"|format(kpi.my_partner_sum) }} EUR</div>
+    <div class="small text-muted">Начислено по стартам</div>
+  </div></div>
+  <div class="col-md-3"><div class="card p-4 kpi-card text-center">
+    <div class="label small text-muted">Мой баланс</div>
+    <div class="value h3 mb-0">{{ "%.2f"|format(kpi.my_partner_balance) }} EUR</div>
+    <div class="small text-muted">Учитывая все выплаты</div>
+  </div></div>
+</div>
+<h2 class="hero-title mb-3">Актуальные вакансии</h2>
+<div class="row row-cols-1 row-cols-md-2 g-3">
+  {% for job in jobs %}
+  <div class="col">
+    <div class="card h-100 p-3 position-relative job-card">
+      <div class="d-flex justify-content-between align-items-start mb-1">
+        <div>
+          <h5 class="mb-1">{{ job.title }}</h5>
+          <div class="small text-muted">{{ job.location }}</div>
+          {% if job.short_description %}
+          <div class="small mt-1 text-body-secondary">
+            {{ job.short_description }}
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-end">
+          {% if job.priority == 'urgent' %}
+            <span class="badge text-bg-danger mb-1">🔥 Срочно</span><br>
+          {% elif job.priority == 'low' %}
+            <span class="badge text-bg-info mb-1">Низкий</span><br>
+          {% else %}
+            <span class="badge text-bg-secondary mb-1">Обычная</span><br>
+          {% endif %}
+          {% if job.promo_multiplier and job.promo_multiplier > 1 %}
+            <span class="badge text-bg-warning">✨ Акция x{{ job.promo_multiplier|round(2) }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <p class="fw-semibold mb-1">Вознаграждение партнёру:
+        {% if job.promo_multiplier and job.promo_multiplier > 1 %}
+          <span class="text-decoration-line-through text-muted small me-1">{{ job.partner_fee_amount }} EUR</span>
+          <span>{{ (job.partner_fee_amount * job.promo_multiplier)|round(2) }} EUR</span>
+        {% else %}
+          <span>{{ job.partner_fee_amount }} EUR</span>
+        {% endif %}
+      </p>
+      {% if job.promo_label %}
+      <p class="mb-0 small text-warning-emphasis">📢 {{ job.promo_label }}</p>
+      {% endif %}
+
+      <div class="mt-2 d-flex justify-content-between align-items-center">
+        <span class="small text-muted">Нажмите, чтобы открыть вакансию</span>
+        <span class="small text-muted">➜</span>
+      </div>
+
+      <a href="{{ url_for('jobs.job_view', job_id=job.id) }}" class="stretched-link"></a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<hr class="my-4">
+<h3>Мои подачи</h3>
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Вакансия</label>
+      <select class="form-select" name="job_id">
+        <option value="">Все</option>
+        {% for job in jobs %}
+          <option value="{{ job.id }}" {% if current_filters.job_id==job.id %}selected{% endif %}>{{ job.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Статус</label>
+      <select class="form-select" name="status">
+        <option value="">Любой</option>
+        {% for st in pipeline %}
+          <option value="{{ st }}" {% if current_filters.status==st %}selected{% endif %}>{{ st }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Кандидат</label>
+      <input type="text" class="form-control" name="q" placeholder="Поиск по имени" value="{{ current_filters.q or '' }}">
+    </div>
+  </div>
+  <div class="mt-3">
+    <button class="btn btn-primary me-2">Фильтровать</button>
+    <a class="btn btn-outline-secondary" href="{{ url_for('main.index') }}">Сброс</a>
+  </div>
+</form>
+<table class="table table-striped align-middle"><thead><tr><th>Дата</th><th>Кандидат</th><th>Вакансия</th><th>Статус</th></tr></thead>
+<tbody>
+  {% for c, job_title in submissions %}
+  <tr>
+    <td>{{ c.created_at.date() }}</td>
+    <td><a href="{{ url_for('candidates.candidate_view', cand_id=c.id) }}">{{ c.full_name }}</a></td>
+    <td>{{ job_title or 'Не выбрана' }}</td>
+    <td>{{ c.status }}<br>
+      <small class="text-muted">
+        {% if c.status == 'Подан' %}Кандидат отправлен координатору{% elif c.status == 'Вышел на работу' %}Кандидат вышел в первый день{% elif c.status == 'Не вышел' %}Кандидат не пришёл в первый день{% elif c.status == 'Отработал месяц' %}Кандидат отработал месяц, комиссия подтверждается{% elif c.status == 'Не отработал' %}Кандидат не отработал месяц, комиссия не начисляется{% endif %}
+      </small>
+    </td>
+  </tr>
+  {% endfor %}
+</tbody></table>
+{% endblock %}

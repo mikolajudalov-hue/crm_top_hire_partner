@@ -1,0 +1,182 @@
+{% extends 'layout.html' %}
+
+{% block title %}Мои партнёры{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="mb-4">Мои партнёры</h1>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-1">Партнёров всего</div>
+          <div class="fs-3 fw-semibold">{{ partners_total }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-1">Новых партнёров в этом месяце</div>
+          <div class="fs-3 fw-semibold">{{ new_partners_month }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Фильтры для координатора/директора #}
+  {% if recruiters %}
+  <form class="row g-2 align-items-end mb-4" method="get">
+    <div class="col-md-4">
+      <label class="form-label">Рекрутёр</label>
+      <select name="recruiter_id" class="form-select">
+        <option value="">Все рекрутёры</option>
+        {% for r in recruiters %}
+          <option value="{{ r.id }}" {% if recruiter_filter_id == r.id %}selected{% endif %}>{{ r.name }} ({{ r.email }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Статус заявки</label>
+      <select name="status" class="form-select">
+        <option value="new" {% if status == 'new' %}selected{% endif %}>Новые</option>
+        <option value="approved" {% if status == 'approved' %}selected{% endif %}>Одобренные</option>
+        <option value="rejected" {% if status == 'rejected' %}selected{% endif %}>Отклонённые</option>
+        <option value="all" {% if status == 'all' %}selected{% endif %}>Все</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary w-100">Фильтровать</button>
+    </div>
+  </form>
+  {% endif %}
+
+  {# Блок заявок партнёров #}
+  <div class="mb-5">
+    <h2 class="h4 mb-3">Мои заявки партнёров</h2>
+    {% if not requests %}
+      <p class="text-muted">У вас пока нет заявок партнёров.</p>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Дата</th>
+              <th>Email</th>
+              <th>Имя</th>
+              <th>Телефон</th>
+              <th>Комментарий</th>
+              <th>Статус</th>
+              <th style="width: 220px;">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in requests %}
+            <tr>
+              <td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else '' }}</td>
+              <td>{{ r.email }}</td>
+              <td>{{ r.full_name }}</td>
+              <td>{{ r.phone }}</td>
+              <td>{{ r.note }}</td>
+              <td>
+                {% if r.status == 'new' %}
+                  <span class="badge text-bg-warning">Новая</span>
+                {% elif r.status == 'approved' %}
+                  <span class="badge text-bg-success">Одобрена</span>
+                {% elif r.status == 'rejected' %}
+                  <span class="badge text-bg-danger">Отклонена</span>
+                {% else %}
+                  {{ r.status }}
+                {% endif %}
+              </td>
+              <td>
+                {% if r.status == 'new' and g.user.role in ['recruiter','coordinator','director'] %}
+                  <form method="post"
+                        action="{{ url_for('admin.registration_approve', req_id=r.id) }}"
+                        class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-success">
+                      Создать партнёра
+                    </button>
+                  </form>
+                  <form method="post"
+                        action="{{ url_for('admin.registration_reject', req_id=r.id) }}"
+                        class="d-inline"
+                        onsubmit="return confirm('Отклонить заявку {{ r.email }}?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      Отклонить
+                    </button>
+                  </form>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+
+  {# Блок действующих партнёров #}
+  <div>
+    <h2 class="h4 mb-3">Мои партнёры</h2>
+    {% if not partners %}
+      <p class="text-muted">Пока нет активных партнёров.</p>
+    {% else %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Имя</th>
+              <th>Email</th>
+              <th>Комментарий</th>
+              <th>Здоровье</th>
+              <th>Дней без подач</th>
+              <th>Активен</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in partners %}
+            <tr>
+              <td>{{ u.name }}</td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.note }}</td>
+              <td>
+                {% if u.health_status == 'green' %}
+                  🟢 {{ u.health_status_label or 'Активный' }}
+                {% elif u.health_status == 'yellow' %}
+                  🟡 {{ u.health_status_label or 'Затухает' }}
+                {% elif u.health_status == 'red' %}
+                  🔴 {{ u.health_status_label or 'Спит' }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+                {% if u.health_score is not none %}
+                  <span class="text-muted small ms-1">({{ u.health_score }})</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.days_since_last is not none %}
+                  {{ u.days_since_last }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+              <td>
+                {% if u.is_active %}
+                  <span class="badge text-bg-success">Да</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Нет</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

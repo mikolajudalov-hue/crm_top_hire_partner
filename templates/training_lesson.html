@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block title %}{{ lesson.title }} — Обучение{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+      <a href="{{ url_for('training.section', section_id=section.id) }}" class="btn btn-link btn-sm ps-0">&larr; {{ section.title }}</a>
+      <h1 class="h4 mb-0">{{ lesson.title }}</h1>
+      {% if lesson.estimated_minutes %}
+      <div class="small text-muted">Ориентировочно {{ lesson.estimated_minutes }} мин.</div>
+      {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+      {% if prev_lesson %}
+      <a href="{{ url_for('training.lesson', lesson_id=prev_lesson.id) }}" class="btn btn-outline-secondary btn-sm">
+        &larr; Предыдущий
+      </a>
+      {% endif %}
+      {% if next_lesson %}
+      <a href="{{ url_for('training.lesson', lesson_id=next_lesson.id) }}" class="btn btn-outline-secondary btn-sm">
+        Следующий &rarr;
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+            {% if lesson.image_url %}
+      <div class="mb-3 text-center">
+        <img src="{{ lesson.image_url }}" alt="{{ lesson.title }}" class="img-fluid rounded">
+      </div>
+      {% endif %}
+      <div class="lesson-content">
+        {{ lesson.content | replace('\n', '<br>') | safe }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

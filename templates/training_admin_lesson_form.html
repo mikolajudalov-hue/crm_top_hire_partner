@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block title %}{{ "Новый урок" if not lesson else "Редактирование урока" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <a href="{{ url_for('training.admin_lessons') }}" class="btn btn-link btn-sm ps-0">&larr; Все уроки</a>
+
+  <h1 class="h4 mb-3">{{ "Новый урок" if not lesson else "Редактирование урока" }}</h1>
+
+  <form method="post" class="card shadow-sm border-0">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Раздел<span class="text-danger">*</span></label>
+          <select class="form-select" name="section_id" required>
+            {% for s in sections %}
+            <option value="{{ s.id }}"
+              {% if (form and form.get('section_id')|int == s.id) or (not form and lesson and lesson.section_id == s.id) or (not form and not lesson and loop.first) %}
+                selected
+              {% endif %}>
+              {{ s.title }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Название урока<span class="text-danger">*</span></label>
+          <input type="text" name="title" class="form-control"
+                 value="{{ (form.get('title') if form else None) or (lesson.title if lesson else '') }}"
+                 required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Slug (по желанию)</label>
+          <input type="text" name="slug" class="form-control"
+                 value="{{ (form.get('slug') if form else None) or (lesson.slug if lesson else '') }}"
+                 placeholder="если пусто — сгенерируется автоматически">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Ссылка на картинку (по желанию)</label>
+          <input type="url" name="image_url" class="form-control"
+                 value="{{ (form.get('image_url') if form else None) or (lesson.image_url if lesson else '') }}"
+                 placeholder="https://...">
+          <div class="form-text">Можно указать ссылку на обложку или иллюстрацию к уроку.</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Оценочное время (мин)</label>
+          <input type="number" name="estimated_minutes" min="1" class="form-control"
+                 value="{{ (form.get('estimated_minutes') if form else None) or (lesson.estimated_minutes if lesson else 10) }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Порядок</label>
+          <input type="number" name="sort_order" class="form-control"
+                 value="{{ (form.get('sort_order') if form else None) or (lesson.sort_order if lesson else 10) }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Содержимое урока</label>
+          <textarea name="content" rows="10" class="form-control" placeholder="Текст, советы, чек-листы...">{{ (form.get('content') if form else None) or (lesson.content if lesson else '') }}</textarea>
+        </div>
+        <div class="col-12">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="is_published" id="is_published"
+                   {% if (form and form.get('is_published')) or (not form and lesson and lesson.is_published) or (not form and not lesson) %}checked{% endif %}>
+            <label class="form-check-label" for="is_published">
+              Урок опубликован и виден пользователям
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer text-end">
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="mb-4">
+  {% if user %}Редактировать пользователя{% else %}Создать пользователя{% endif %}
+</h1>
+
+<div class="card p-3">
+  <form method="post">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Имя</label>
+        <input type="text" name="name" class="form-control" value="{{ user.name if user else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" value="{{ user.email if user else '' }}" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Роль</label>
+        <select name="role" class="form-select">
+          {% if g.user.role == "coordinator" %}
+            <option value="coordinator" {% if user and user.role == "coordinator" %}selected{% endif %}>Админ</option>
+            <option value="director" {% if user and user.role == "director" %}selected{% endif %}>Директор</option>
+            <option value="recruiter" {% if (user and user.role == "recruiter") or (not user) %}selected{% endif %}>Рекрутер</option>
+            <option value="partner" {% if user and user.role == "partner" %}selected{% endif %}>Партнёр</option>
+            <option value="finance" {% if user and user.role == "finance" %}selected{% endif %}>Бухгалтер</option>
+          {% elif g.user.role == "director" %}
+            <option value="recruiter" {% if (user and user.role == "recruiter") or (not user) %}selected{% endif %}>Рекрутер</option>
+            <option value="partner" {% if user and user.role == "partner" %}selected{% endif %}>Партнёр</option>
+            <option value="finance" {% if user and user.role == "finance" %}selected{% endif %}>Бухгалтер</option>
+          {% else %}
+            <option value="recruiter" {% if (user and user.role == "recruiter") or (not user) %}selected{% endif %}>Рекрутер</option>
+            <option value="partner" {% if user and user.role == "partner" %}selected{% endif %}>Партнёр</option>
+          {% endif %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">
+          Пароль
+          {% if user %}<span class="text-muted small">(оставьте пустым, чтобы не менять)</span>{% endif %}
+        </label>
+        <input type="password" name="password" class="form-control" autocomplete="new-password" {% if not user %}required{% endif %}>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Активен</label>
+        <select name="is_active" class="form-select">
+          <option value="1" {% if not user or user.is_active %}selected{% endif %}>Да</option>
+          <option value="0" {% if user and not user.is_active %}selected{% endif %}>Нет</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Уровень партнёра</label>
+        <select name="partner_tier" class="form-select">
+          {% set tiers = ['Bronze','Silver','Gold','Platinum','Diamond'] %}
+          {% set current_tier = user.note if user and user.note in tiers else 'Bronze' %}
+          {% for t in tiers %}
+            <option value="{{ t }}" {% if current_tier == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Используется для партнёров как мотивационный статус (Golden, Silver и т.д.).</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Назначенный рекрутёр (для партнёра)</label>
+        <select name="assigned_recruiter_id" class="form-select">
+          <option value="">— не назначен —</option>
+          {% if recruiters %}
+            {% for r in recruiters %}
+              <option value="{{ r.id }}" {% if user and user.assigned_recruiter_id == r.id %}selected{% endif %}>{{ r.name }} (ID {{ r.id }})</option>
+            {% endfor %}
+          {% endif %}
+        </select>
+        <div class="form-text">Если пользователь — партнёр, именно этот рекрутёр сможет подтверждать отработку месяца.</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Расчётный день (для партнёра)</label>
+        <input type="number" name="settlement_day" min="1" max="28"
+               class="form-control"
+               value="{% if user and user.settlement_day %}{{ user.settlement_day }}{% else %}10{% endif %}">
+        <div class="form-text">День месяца, когда формируются выплаты этому партнёру (1–28).</div>
+      </div>
+    </div>
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        {% if user %}Сохранить{% else %}Создать{% endif %}
+      </button>
+      <a href="{{ url_for('admin.admin_users') }}" class="btn btn-outline-secondary">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

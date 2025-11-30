@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% block title %}Управление уроками{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="h4 mb-0">Управление уроками обучения</h1>
+    <a href="{{ url_for('training.admin_lesson_new') }}" class="btn btn-primary btn-sm">
+      + Новый урок
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+      {% if not lessons %}
+        <div class="p-3 text-muted">Пока нет ни одного урока.</div>
+      {% else %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Раздел</th>
+              <th scope="col">Название</th>
+              <th scope="col">Минут</th>
+              <th scope="col">Порядок</th>
+              <th scope="col">Статус</th>
+              <th scope="col" class="text-end">Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in lessons %}
+            <tr>
+              <td class="small">
+                {% set sec = sections_map.get(l.section_id) %}
+                {{ sec.title if sec else "Без раздела" }}
+              </td>
+              <td>
+                <div class="fw-semibold mb-0">{{ l.title }}</div>
+                <div class="small text-muted">{{ l.slug }}</div>
+              </td>
+              <td class="small">
+                {{ l.estimated_minutes or "" }}
+              </td>
+              <td class="small">
+                {{ l.sort_order }}
+              </td>
+              <td class="small">
+                {% if l.is_published %}
+                  <span class="badge bg-success-subtle text-success border border-success-subtle">Опубликован</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-muted border border-secondary-subtle">Черновик</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{{ url_for('training.admin_lesson_edit', lesson_id=l.id) }}" class="btn btn-outline-secondary btn-sm">
+                  Редактировать
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

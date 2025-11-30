@@ -1,0 +1,156 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="hero-title mb-3">Редактировать вакансию</h2>
+<form method="post" class="card p-3" enctype="multipart/form-data">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Название</label>
+      <input class="form-control" name="title" value="{{ job.title }}" required>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Локация</label>
+      <input class="form-control" name="location" value="{{ job.location }}">
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Пол</label>
+      <select class="form-select" name="gender_preference">
+        <option value="" {% if not job.gender_preference %}selected{% endif %}>Любой</option>
+        <option value="male" {% if job.gender_preference == 'male' %}selected{% endif %}>Мужчина</option>
+        <option value="female" {% if job.gender_preference == 'female' %}selected{% endif %}>Женщина</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Возраст до</label>
+      <input class="form-control" type="number" name="age_to" min="0" value="{{ job.age_to if job.age_to }}">
+      <div class="form-text">0 или пусто — без ограничения по возрасту.</div>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">Нужно мужчин</label>
+      <input class="form-control" type="number" name="needed_male" min="0" value="{{ job.needed_male or 0 }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Нужно женщин</label>
+      <input class="form-control" type="number" name="needed_female" min="0" value="{{ job.needed_female or 0 }}">
+    </div>
+    <div class="col-md-4">
+      <div class="form-check mt-4">
+        <input class="form-check-input" type="checkbox" name="allow_family_couples" id="allow_family_couples_edit" {% if job.allow_family_couples %}checked{% endif %}>
+        <label class="form-check-label" for="allow_family_couples_edit">
+          Допускаются семейные пары
+        </label>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Описание</label>
+      <textarea class="form-control" name="description" rows="5">{{ job.description }}</textarea>
+    </div>
+
+    <div class="col-12">
+      <label class="form-label">Короткое описание (для карточки)</label>
+      <input class="form-control" name="short_description" maxlength="255" value="{{ job.short_description }}" placeholder="Видно в списке вакансий и на витрине для партнёров">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Приоритет</label>
+      <select class="form-select" name="priority">
+        <option value="urgent" {% if job.priority == 'urgent' %}selected{% endif %}>Срочно</option>
+        <option value="normal" {% if job.priority == 'normal' %}selected{% endif %}>Обычная</option>
+        <option value="low" {% if job.priority == 'low' %}selected{% endif %}>Низкий</option>
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Статус</label>
+      <select class="form-select" name="status">
+        <option value="active" {% if job.status == 'active' %}selected{% endif %}>Актуальная</option>
+        <option value="inactive" {% if job.status == 'inactive' %}selected{% endif %}>Не актуальная</option>
+      </select>
+      <div class="form-text">Не актуальные вакансии будут показаны внизу списка.</div>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Комиссия партнёру (EUR)</label>
+      <input class="form-control" type="number" step="0.01" name="partner_fee_amount" value="{{ job.partner_fee_amount }}">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Комиссия рекрутёру (EUR)</label>
+      <input class="form-control" type="number" step="0.01" name="recruiter_fee_amount" value="{{ job.recruiter_fee_amount }}">
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Надбавка для мужчин</label>
+      <div class="form-check mb-1">
+        <input class="form-check-input" type="checkbox" name="male_bonus_enabled" id="male_bonus_enabled" {% if job.male_bonus_enabled %}checked{% endif %}>
+        <label class="form-check-label" for="male_bonus_enabled">
+          Мужчины оплачиваются выше
+        </label>
+      </div>
+      <div class="input-group">
+        <input class="form-control" type="number" step="1" min="0" max="100" name="male_bonus_percent" value="{{ job.male_bonus_percent or 0 }}">
+        <span class="input-group-text">%</span>
+      </div>
+      <div class="form-text text-muted small">Прозрачная надбавка к выплате для кандидатов-мужчин по этой вакансии.</div>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Бустер для партнёра</label>
+      <div class="input-group">
+        <span class="input-group-text">×</span>
+        <input class="form-control" type="number" step="0.1" min="1" name="promo_multiplier" value="{{ job.promo_multiplier or 1.0 }}">
+      </div>
+      <div class="form-text text-muted small">
+        Умножает выплату партнёру по этой вакансии. Например, 1.5 = +50% к стандартной комиссии.
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <label class="form-label">Текст акции (опционально)</label>
+      <input class="form-control" name="promo_label" value="{{ job.promo_label }}" placeholder="Например: До 31.12 ×1.5 за старт">
+    </div>
+  </div>
+
+
+    <div class="col-12 mt-3">
+      <label class="form-label">Обложка вакансии</label>
+      <input class="form-control" type="file" name="thumbnail_image" accept="image/*">
+      {% if job.thumbnail_image %}
+      <div class="mt-2 small text-muted">Текущая обложка:</div>
+      <div class="mt-1">
+        <img src="{{ url_for('jobs.job_thumb', job_id=job.id) }}" alt="Обложка вакансии" class="rounded" style="max-width: 220px; max-height: 140px; object-fit: cover;">
+      </div>
+      {% endif %}
+      <div class="form-text text-muted small">
+        Картинка будет показываться в списке вакансий и на главной странице.
+      </div>
+    </div>
+
+    <div class="col-12 mt-3">
+      <label class="form-label">Проживание — фото</label>
+      <input class="form-control" type="file" name="housing_photos" accept="image/*" multiple>
+      {% if housing_photos %}
+      <div class="form-text text-muted small mt-1">
+        Уже загруженные фото проживания:
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-2">
+        {% for ph in housing_photos %}
+        <div class="border rounded overflow-hidden" style="width: 140px; height: 90px;">
+          <img src="{{ url_for('jobs.job_housing_photo', job_id=job.id, photo_id=ph.id) }}" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="form-text text-muted small">
+        Можно добавить ещё 2–6 фото: фасад дома, комнаты, кухня, санузел.
+      </div>
+    </div>
+
+  <div class="mt-3 d-flex justify-content-between">
+    <a href="{{ url_for('jobs.job_view', job_id=job.id) }}" class="btn btn-outline-secondary">Отмена</a>
+    <button class="btn btn-primary">Сохранить</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="hero-title mb-0">{{ "Мої звіти" if current_lang=="uk" else "Мои отчёты" }}</h1>
+</div>
+
+<form method="get" class="row row-cols-lg-auto g-3 align-items-center mb-4">
+  <div class="col-12">
+    <label class="form-label">{{ "Період" if current_lang=="uk" else "Период" }}</label>
+    <select name="period" class="form-select form-select-sm">
+      <option value="month" {% if period == 'month' %}selected{% endif %}>{{ "Поточний місяць" if current_lang=="uk" else "Текущий месяц" }}</option>
+      <option value="quarter" {% if period == 'quarter' %}selected{% endif %}>{{ "Поточний квартал" if current_lang=="uk" else "Текущий квартал" }}</option>
+      <option value="year" {% if period == 'year' %}selected{% endif %}>{{ "Поточний рік" if current_lang=="uk" else "Текущий год" }}</option>
+      <option value="all" {% if period == 'all' %}selected{% endif %}>{{ "За весь час" if current_lang=="uk" else "За всё время" }}</option>
+    </select>
+  </div>
+  <div class="col-12">
+    <button class="btn btn-sm btn-primary mt-4">{{ "Показати" if current_lang=="uk" else "Показать" }}</button>
+  </div>
+</form>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="text-muted small mb-1">{{ "Створено кандидатів" if current_lang=="uk" else "Создано кандидатов" }}</div>
+      <div class="h3 mb-0">{{ totals.created }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="text-muted small mb-1">{{ "Вийшли на роботу" if current_lang=="uk" else "Вышли на работу" }}</div>
+      <div class="h3 mb-0">{{ totals.started }}</div>
+      <div class="text-muted small">{{ totals.conv_started }}% {{ "від створених" if current_lang=="uk" else "от созданных" }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="text-muted small mb-1">{{ "Не вийшли / зірвалися" if current_lang=="uk" else "Не вышли / сорвались" }}</div>
+      <div class="h3 mb-0">{{ totals.failed }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card p-3 h-100">
+      <div class="text-muted small mb-1">{{ "Відпрацювали місяць" if current_lang=="uk" else "Отработали месяц" }}</div>
+      <div class="h3 mb-0">{{ totals.worked_month }}</div>
+      <div class="text-muted small">{{ totals.conv_worked_month }}% {{ "від створених" if current_lang=="uk" else "от созданных" }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card p-3 h-100">
+      <div class="text-muted small mb-1">{{ "Оформлень (placement)" if current_lang=="uk" else "Оформлений (placement)" }}</div>
+      <div class="h3 mb-0">{{ totals.placements }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 h-100">
+      <div class="text-muted small mb-1">{{ "Потенційний заробіток" if current_lang=="uk" else "Потенциальный заработок" }}</div>
+      <div class="h3 mb-0">{{ "%.2f"|format(totals.potential_sum) }} EUR</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 h-100">
+      <div class="text-muted small mb-1">{{ "Виплачено за період" if current_lang=="uk" else "Выплачено за период" }}</div>
+      <div class="h3 mb-0">{{ "%.2f"|format(totals.paid_sum) }} EUR</div>
+      <div class="text-muted small">{{ "Залишок до виплати" if current_lang=="uk" else "Остаток к выплате" }}: {{ "%.2f"|format(totals.balance_period) }} EUR</div>
+    </div>
+  </div>
+</div>
+{% if paid_placements %}
+<hr class="my-4">
+<h2 class="h5 mt-3 mb-2">
+  {{ "Виплати за період" if current_lang=="uk" else "Выплаты за период" }}
+  {% if period_start and period_end %}
+    <span class="text-muted small">({{ period_start }} — {{ period_end }})</span>
+  {% endif %}
+</h2>
+<div class="table-responsive">
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>{{ "Кандидат" if current_lang=="uk" else "Кандидат" }}</th>
+        <th>{{ "Вакансія" if current_lang=="uk" else "Вакансия" }}</th>
+        <th class="text-end">{{ "Сума, EUR" if current_lang=="uk" else "Сумма, EUR" }}</th>
+        <th class="text-center">{{ "Старт" if current_lang=="uk" else "Старт" }}</th>
+        <th class="text-center">{{ "Дата оплати" if current_lang=="uk" else "Дата оплаты" }}</th>
+        <th class="text-center">{{ "Підтвердження" if current_lang=="uk" else "Подтверждение" }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in paid_placements %}
+      <tr>
+        <td>{{ p.candidate.full_name if p.candidate else "—" }}</td>
+        <td>{{ p.job.title if p.job else "—" }}</td>
+        <td class="text-end">{{ "%.2f"|format(p.partner_commission or 0.0) }}</td>
+        <td class="text-center">{{ p.start_date }}</td>
+        <td class="text-center">{{ p.partner_paid_at }}</td>
+        <td class="text-center">
+          {% if p.partner_payment_file %}
+            <a href="{{ url_for('finance.finance_payment_file', placement_id=p.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+              {{ "Файл" if current_lang=="uk" else "Файл" }}
+            </a>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

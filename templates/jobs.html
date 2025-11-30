@@ -1,0 +1,218 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="hero-title mb-0">Вакансии</h2>
+  {% if g.user.role in ['coordinator','recruiter'] %}
+    <a class="btn btn-primary" href="{{ url_for('jobs.job_new') }}">+ Добавить</a>
+  {% endif %}
+</div>
+
+<style>
+  .jobs-grid {
+    margin-top: 0.5rem;
+  }
+  .job-card {
+    cursor: default;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    box-shadow: 0 8px 18px rgba(0,0,0,.03);
+    padding: 1rem 1.1rem;
+  }
+  .job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(15,23,42,.12);
+  }
+  .job-card h5 {
+    margin-top: 0.15rem;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+  .job-card .job-location,
+  .job-card .job-meta {
+    font-size: 0.8rem;
+  }
+  .job-card .job-short {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .job-card .job-commission-label {
+    font-size: 0.8rem;
+    margin-bottom: 0.15rem;
+  }
+  .job-card .job-commission {
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: #e8f2ff;
+    color: #0b63b6;
+    display: inline-block;
+  }
+  .job-card .btn {
+    padding: 0.25rem 0.7rem;
+    font-size: 0.78rem;
+    border-radius: 999px;
+  }
+  @media (max-width: 575.98px) {
+    .job-card {
+      padding: 0.85rem;
+    }
+  }
+
+  .job-actions {
+    row-gap: 0.25rem;
+  }
+
+  
+  .job-card-thumb {
+    margin-bottom: 0.5rem;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.45);
+    background: #f9fafb;
+  }
+  .job-card-thumb img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+  }
+.job-card-footer {
+    margin-top: auto;
+    padding-top: 0.6rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.35);
+    font-size: 0.8rem;
+  }
+
+</style>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xxl-4 g-3 g-xl-4 jobs-grid">
+{% for j in jobs %}
+  <div class="col">
+    <div class="card p-3 job-card h-100 d-flex flex-column">
+      <div class="flex-grow-1">
+      {% if j.thumbnail_image %}
+      <div class="job-card-thumb">
+        <img src="{{ url_for('jobs.job_thumb', job_id=j.id) }}" alt="Обложка вакансии {{ j.title }}">
+      </div>
+      {% endif %}
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <h5 class="mb-1">{{ j.title }}</h5>
+          <div class="small text-muted job-location">{{ j.location }}</div>
+          {% if j.gender_preference or j.age_to %}
+          <div class="small text-muted mt-1 job-meta">
+            {% if j.gender_preference %}
+              Пол: {% if j.gender_preference == 'male' %}мужчина{% elif j.gender_preference == 'female' %}женщина{% else %}любой{% endif %}
+              {% if j.age_to %} · {% endif %}
+            {% endif %}
+            {% if j.age_to %}
+              возраст до {{ j.age_to }} лет
+            {% endif %}
+          </div>
+          {% endif %}
+          {% if j.short_description %}
+          <div class="small mt-2 text-body-secondary job-short">
+            {{ j.short_description }}
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-end small">
+          <div class="mb-1">
+            {% if j.priority == 'top' %}
+              <span class="badge text-bg-warning">Закреплена</span>
+            {% elif j.priority == 'urgent' %}
+              <span class="badge text-bg-danger">Срочная</span>
+            {% elif j.priority == 'low' %}
+              <span class="badge text-bg-light text-muted">Низкий приоритет</span>
+            {% else %}
+              <span class="badge text-bg-secondary">Обычная</span>
+            {% endif %}
+          </div>
+          <div>
+            {% if j.status == 'inactive' %}
+              <span class="badge text-bg-light text-muted">Не актуальная</span>
+            {% elif j.status == 'active' %}
+              <span class="badge text-bg-success">Актуальная</span>
+            {% else %}
+              <span class="badge text-bg-secondary">{{ j.status }}</span>
+            {% endif %}
+          </div>
+          {% if j.promo_multiplier and j.promo_multiplier > 1 %}
+            <div class="mt-1">
+              <span class="badge text-bg-warning">✨ Акция x{{ j.promo_multiplier|round(2) }}</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="fw-semibold job-commission-label">Партнёрская комиссия:</div>
+        {% if j.promo_multiplier and j.promo_multiplier > 1 %}
+          <div class="d-flex flex-column">
+            <div>
+              <span class="text-decoration-line-through text-muted small me-1">{{ j.partner_fee_amount }} EUR</span>
+              <span class="job-commission">{{ (j.partner_fee_amount * j.promo_multiplier)|round(2) }} EUR</span>
+            </div>
+            {% if j.promo_label %}
+              <div class="small text-warning-emphasis">✨ {{ j.promo_label }}</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <span class="job-commission">{{ j.partner_fee_amount }} EUR</span>
+        {% endif %}
+      </div>
+
+      <div class="mb-2 small text-muted">
+        {% if j.needed_male or j.needed_female %}
+          <div>
+            {% if j.needed_male %}Мужчин: <strong>{{ j.needed_male }}</strong>{% endif %}
+            {% if j.needed_male and j.needed_female %} &nbsp;·&nbsp;{% endif %}
+            {% if j.needed_female %}Женщин: <strong>{{ j.needed_female }}</strong>{% endif %}
+          </div>
+        {% endif %}
+        <div>
+          {% if j.allow_family_couples %}
+            👨‍👩‍👧‍👦 Семейные пары допускаются
+          {% else %}
+            🚫 Без семейных пар
+          {% endif %}
+        </div>
+      </div>
+
+      </div>
+      <div class="job-card-footer d-flex justify-content-between align-items-center mt-2">
+        <div class="small text-muted">
+          Создана: {{ j.created_at.strftime('%d.%m.%Y') if j.created_at }}
+        </div>
+        <div class="job-actions d-flex flex-wrap justify-content-end gap-1">
+          <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('jobs.job_view', job_id=j.id) }}">Открыть</a>
+          {% if g.user.role in ['coordinator','recruiter'] %}
+          <a class="btn btn-outline-primary btn-sm ms-1" href="{{ url_for('jobs.job_edit', job_id=j.id) }}">Редактировать</a>
+          <form method="post" action="{{ url_for('jobs.job_pin', job_id=j.id) }}" class="d-inline">
+            {% if j.priority == 'top' %}
+            <button type="submit" class="btn btn-warning btn-sm ms-1">Убрать с верха</button>
+            {% else %}
+            <button type="submit" class="btn btn-outline-primary btn-sm ms-1">На верх</button>
+            {% endif %}
+          </form>
+          {% endif %}
+          {% if g.user.role == 'coordinator' %}
+          <form method="post" action="{{ url_for('jobs.job_delete', job_id=j.id) }}" class="d-inline" onsubmit="return confirm('Точно удалить вакансию и всех связанных кандидатов? Это действие нельзя отменить.');">
+            <button type="submit" class="btn btn-outline-danger btn-sm ms-1">Удалить</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+</div>
+{% endblock %}

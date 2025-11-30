@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="{{ current_lang or 'ru' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ BRAND }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/tophire.css') }}" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <style>
+    .breath-circle-wrapper {
+      width: 120px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .breath-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid #0d6efd;
+      opacity: 0.9;
+      transition: transform 4s ease-in-out, opacity 0.4s ease-in-out;
+      transform: scale(1);
+    }
+    .breath-circle.inhale {
+      transform: scale(1.4);
+    }
+    .breath-circle.exhale {
+      transform: scale(0.8);
+      opacity: 0.6;
+    }
+    .relax-game-area button#relaxTarget {
+      transition: top 0.15s ease-out, left 0.15s ease-out;
+    }
+
+    .reaction-area {
+      height: 150px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      background-color: #f8d7da; /* красноватый, "ждите" */
+    }
+    .reaction-area.ready {
+      background-color: #d1ecf1; /* ожидание старта */
+    }
+    .reaction-area.go {
+      background-color: #d4edda; /* зелёный, можно кликать */
+    }
+    .memory-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+      justify-items: stretch;
+    }
+    .memory-card {
+      height: 60px;
+      font-size: 1.1rem;
+    }
+
+  </style>
+
+</head>
+<body>
+<nav class="navbar navbar-expand-lg py-2">
+  <div class="container">
+    <a class="navbar-brand brand d-flex align-items-center gap-2" href="{{ url_for('main.index') }}">
+      <span class="brand-mark">{{ BRAND }}</span>
+      <span class="brand-hamster d-none d-sm-inline-flex">
+        <!-- From Uiverse.io by Nawsome -->
+        <div aria-label="Orange and tan hamster running in a metal wheel"
+             role="img"
+             class="wheel-and-hamster">
+          <div class="wheel"></div>
+          <div class="hamster">
+            <div class="hamster__body">
+              <div class="hamster__head">
+                <div class="hamster__ear"></div>
+                <div class="hamster__eye"></div>
+                <div class="hamster__nose"></div>
+              </div>
+              <div class="hamster__limb hamster__limb--fr"></div>
+              <div class="hamster__limb hamster__limb--fl"></div>
+              <div class="hamster__limb hamster__limb--br"></div>
+              <div class="hamster__limb hamster__limb--bl"></div>
+              <div class="hamster__tail"></div>
+            </div>
+          </div>
+          <div class="spoke"></div>
+        </div>
+      </span>
+    </a>
+    {% if g.user %}
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav nav-main ms-4 me-auto align-items-lg-center gap-lg-1">
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('jobs.jobs') }}">
+            {{ "Вакансії" if current_lang=="uk" else "Вакансии" }}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('candidates.candidates') }}">
+            {{ "Кандидати" if current_lang=="uk" else "Кандидаты" }}
+          </a>
+        </li>
+        {% if g.user.role in ['recruiter','coordinator','director'] %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.my_partners') }}">
+            {{ "Мої партнери" if current_lang=="uk" else "Мои партнёры" }}
+          </a>
+        </li>
+        {% endif %}
+        {# Блок для финансов: собираем в один дропдаун #}
+        {% if g.user.role in ['recruiter','coordinator','director','finance'] %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navFinance" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ "Фінанси" if current_lang=="uk" else "Финансы" }}
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navFinance">
+            <li>
+              <a class="dropdown-item" href="{{ url_for('finance.finance_dashboard') }}">
+                {{ "Панель" if current_lang=="uk" else "Панель" }}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('finance.finance_partners') }}">
+                {{ "Партнери / виплати" if current_lang=="uk" else "Партнёры / выплаты" }}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('finance.finance_payments') }}">
+                {{ "К виплаті" if current_lang=="uk" else "К выплате" }}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('finance.finance_history') }}">
+                {{ "Історія виплат" if current_lang=="uk" else "История выплат" }}
+              </a>
+            </li>
+            {% if g.user.role in ['recruiter','coordinator','director'] %}
+            <li>
+              <a class="dropdown-item" href="{{ url_for('finance.confirm_month') }}">
+                {{ "Підтвердження місяця" if current_lang=="uk" else "Подтверждение месяца" }}
+                {% if g.confirm_month_count %}
+                  <span class="badge text-bg-danger ms-1">{{ g.confirm_month_count }}</span>
+                {% endif %}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('finance.reports') }}">
+                {{ "Звіти" if current_lang=="uk" else "Отчёты" }}
+              </a>
+            </li>
+            {% endif %}
+            {% if g.user.role in ['coordinator','director'] %}
+            <li>
+              <a class="dropdown-item" href="{{ url_for('main.analytics') }}">
+                Аналітика / Аналитика
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </li>
+        {% endif %}
+
+        <li class="nav-item">
+          <a class="nav-link nav-link-icon-label" href="/relax">
+            <span class="nav-icon">🌿</span>
+            <span class="nav-link-label">Relax</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link nav-link-icon-label" href="{{ url_for('training.index') }}">
+            <span class="nav-icon">🎓</span>
+            <span class="nav-link-label">{{ "Навчання" if current_lang=="uk" else "Обучение" }}</span>
+          </a>
+        </li>
+
+{# Блок для партнёров: тоже дропдаун, чтобы не перегружать верхнюю строку #}
+        {% if g.user.role == 'partner' %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle nav-link-with-badge" href="#" id="navPartner" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            {{ "Партнеру" if current_lang=="uk" else "Партнёру" }}
+            {% if g.partner_profile_incomplete %}
+              <span class="nav-badge nav-badge-danger" title="Заполните профиль партнёра">!</span>
+            {% endif %}
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navPartner">
+            {% if g.partner_profile_incomplete %}
+            <li>
+              <a class="dropdown-item text-danger fw-bold" href="{{ url_for('partner.partner_profile') }}">
+                ⚠ {{ "Заповніть профіль (дані для виплат)" if current_lang=="uk" else "Заполните профиль (данные для выплат)" }}
+              </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            {% endif %}
+            <li>
+              <a class="dropdown-item" href="{{ url_for('partner.partner_profile') }}">
+                {{ "Мій профіль" if current_lang=="uk" else "Мой профиль" }}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('partner.partner_earnings') }}">
+                {{ "Мої виплати" if current_lang=="uk" else "Мои выплаты" }}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('partner.partner_payouts') }}">
+                {{ "Історія виплат" if current_lang=="uk" else "История выплат" }}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('partner.partner_reports') }}">
+                {{ "Мої звіти" if current_lang=="uk" else "Мои отчёты" }}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item" href="{{ url_for('partner.partner_help') }}">
+                {{ "Інструкція / Relax" if current_lang=="uk" else "Инструкция / Relax" }}
+              </a>
+            </li>
+          </ul>
+        </li>
+        {% endif %}
+
+{# Админка для координатора #}
+        {% if g.user.role in ['coordinator','director'] %}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('admin.admin_users') }}">
+            {{ "Користувачі" if current_lang=="uk" else "Пользователи" }}
+          </a>
+        </li>
+        {% endif %}
+      
+        </ul>
+
+      <div class="navbar-utilities d-flex align-items-center ms-lg-3 mt-3 mt-lg-0 w-100 w-lg-auto justify-content-between justify-content-lg-end">
+
+        <div class="dropdown me-2">
+          {% set total_alerts = (g.news_unread_count or 0) + (unread_notifications or 0) + (g.inbox_count or 0) %}
+          <button class="btn btn-sm btn-outline-secondary position-relative" type="button"
+                  id="navAlertsDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                  title="{{ 'Оповіщення та повідомлення' if current_lang=='uk' else 'Уведомления и сообщения' }}">
+            <span class="nav-icon">🔔</span>
+            {% if total_alerts > 0 %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ total_alerts }}
+              </span>
+            {% endif %}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navAlertsDropdown">
+            <li class="dropdown-header small text-muted">
+              {{ "Оповіщення" if current_lang=="uk" else "Уведомления" }}
+            </li>
+            <li>
+              <a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ url_for('news.news_list') }}">
+                <span>{{ "Новини" if current_lang=="uk" else "Новости" }}</span>
+                {% if g.news_unread_count %}
+                  <span class="badge bg-danger rounded-pill">{{ g.news_unread_count }}</span>
+                {% endif %}
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ url_for('notifications.notifications_page') }}">
+                <span>{{ "Системні" if current_lang=="uk" else "Системные" }}</span>
+                {% if unread_notifications > 0 %}
+                  <span class="badge bg-danger rounded-pill">{{ unread_notifications }}</span>
+                {% endif %}
+              </a>
+            </li>
+            {% if g.user.role in ['recruiter','coordinator','director'] %}
+            <li>
+              <a class="dropdown-item d-flex justify-content-between align-items-center" href="{{ url_for('main.inbox') }}">
+                <span>{{ "Вхідні" if current_lang=="uk" else "Входящие" }}</span>
+                {% if g.inbox_count %}
+                  <span class="badge bg-danger rounded-pill">{{ g.inbox_count }}</span>
+                {% endif %}
+              </a>
+            </li>
+            {% endif %}
+          </ul>
+        </div>
+
+        <div class="dropdown me-2">
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            {{ "UA" if current_lang=="uk" else "RU" }}
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li>
+              <a class="dropdown-item {% if current_lang=='ru' %}active{% endif %}"
+                 href="{{ url_for('set_lang', lang='ru', next=request.path) }}">RU</a>
+            </li>
+            <li>
+              <a class="dropdown-item {% if current_lang=='uk' %}active{% endif %}"
+                 href="{{ url_for('set_lang', lang='uk', next=request.path) }}">UA</a>
+            </li>
+          
+        </ul>
+        </div>
+
+        <div class="navbar-user d-flex align-items-center gap-2 text-muted small flex-grow-1 flex-lg-grow-0">
+          <span>
+            {{ "Привіт" if current_lang=="uk" else "Hi" }}, {{ g.user.name }} ({{ g.user.role }})
+          </span>
+          {% if g.user.role == 'partner' %}
+            {% set tiers = ['Bronze','Silver','Gold','Platinum','Diamond'] %}
+            {% set tier = g.user.note if g.user.note in tiers else 'Bronze' %}
+            <span class="tier-badge tier-badge-nav tier-{{ tier|lower }}">{{ tier }}</span>
+          {% endif %}
+        </div>
+
+        <a class="btn btn-sm btn-link text-decoration-none d-none d-md-inline" href="{{ url_for('change_password') }}">
+          {{ "Змінити пароль" if current_lang=="uk" else "Сменить пароль" }}
+        </a>
+
+        <a class="btn btn-sm btn-outline-secondary ms-lg-2" href="{{ url_for('logout') }}">
+          {{ "Вийти" if current_lang=="uk" else "Выйти" }}
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</nav>
+
+
+<main class="container pb-5">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ 'success' if category=='success' else ('danger' if category=='danger' else 'secondary') }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+
+{% if g.user %}
+<div class="bottom-toast toast-hidden" id="appreciationToast">
+  <div class="toast-card">
+    <svg class="toast-wave" viewBox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M0,256L11.4,240C22.9,224,46,192,69,192C91.4,192,114,224,137,234.7C160,245,183,235,206,213.3C228.6,192,251,160,274,149.3C297.1,139,320,149,343,181.3C365.7,213,389,267,411,282.7C434.3,299,457,277,480,250.7C502.9,224,526,192,549,181.3C571.4,171,594,181,617,208C640,235,663,277,686,256C708.6,235,731,149,754,122.7C777.1,96,800,128,823,165.3C845.7,203,869,245,891,224C914.3,203,937,117,960,112C982.9,107,1006,181,1029,197.3C1051.4,213,1074,171,1097,144C1120,117,1143,107,1166,133.3C1188.6,160,1211,224,1234,218.7C1257.1,213,1280,139,1303,133.3C1325.7,128,1349,192,1371,192C1394.3,192,1417,128,1429,96L1440,64L1440,320L1428.6,320C1417.1,320,1394,320,1371,320C1348.6,320,1326,320,1303,320C1280,320,1257,320,1234,320C1211.4,320,1189,320,1166,320C1142.9,320,1120,320,1097,320C1074.3,320,1051,320,1029,320C1005.7,320,983,320,960,320C937.1,320,914,320,891,320C868.6,320,846,320,823,320C800,320,777,320,754,320C731.4,320,709,320,686,320C662.9,320,640,320,617,320C594.3,320,571,320,549,320C525.7,320,503,320,480,320C457.1,320,434,320,411,320C388.6,320,366,320,343,320C320,320,297,320,274,320C251.4,320,229,320,206,320C182.9,320,160,320,137,320C114.3,320,91,320,69,320C45.7,320,23,320,11,320L0,320Z"
+        fill-opacity="1"
+      ></path>
+    </svg>
+
+    <div class="toast-icon-container">
+      <svg xmlns="http://www.w3.org/2000/svg"
+           viewBox="0 0 24 24"
+           stroke-width="0"
+           fill="currentColor"
+           stroke="currentColor"
+           class="toast-icon">
+        <path d="M13 7.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-3 3.75a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v4.25h.75a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1 0-1.5h.75V12h-.75a.75.75 0 0 1-.75-.75Z"></path>
+        <path d="M12 1c6.075 0 11 4.925 11 11s-4.925 11-11 11S1 18.075 1 12 5.925 1 12 1ZM2.5 12a9.5 9.5 0 0 0 9.5 9.5 9.5 9.5 0 0 0 9.5-9.5A9.5 9.5 0 0 0 12 2.5 9.5 9.5 0 0 0 2.5 12Z"></path>
+      </svg>
+    </div>
+
+    <div class="toast-message-text-container">
+      <p class="toast-message-text" id="toastMessageMain">
+        {% if current_lang=="uk" %}
+          Дякуємо, що працюєте з нами. Ми цінуємо кожного з вас!
+        {% else %}
+          Спасибо, что работаете с нами. Мы ценим каждого из вас!
+        {% endif %}
+      </p>
+      <p class="toast-sub-text">{{ BRAND }}</p>
+    </div>
+
+    <svg xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 0 15 15"
+         stroke-width="0"
+         fill="none"
+         stroke="currentColor"
+         class="toast-cross-icon">
+      <path
+        fill="currentColor"
+        d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z"
+        clip-rule="evenodd"
+        fill-rule="evenodd"
+      ></path>
+    </svg>
+  </div>
+</div>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var toast = document.getElementById("appreciationToast");
+    if (!toast) return;
+
+    var textEl = document.getElementById("toastMessageMain");
+    var lang = "{{ current_lang or 'ru' }}";
+
+    var phrases = {
+      ru: [
+        "Спасибо, что работаете с нами. Мы ценим каждого из вас!",
+        "Ваши кандидаты — наша общая победа. Спасибо за партнёрство.",
+        "Вместе мы даём людям работу и стабильность. Спасибо, что вы с нами.",
+        "Вы делаете рынок честнее и сильнее. Нам важно работать рядом с вами.",
+        "Спасибо за доверие к TopHire. Мы всегда на вашей стороне.",
+        "Каждый старт — это чья-то новая история. Спасибо, что запускаете их.",
+        "Ваш вклад в команду бесценен. Мы видим это каждый день.",
+        "Спасибо за вашу ответственность и внимание к людям.",
+        "С вами рекрутинг становится проще и человечнее. Мы это ценим.",
+        "Вы — ключевая часть нашей системы. Спасибо, что выбираете нас.",
+        "Спасибо за вашу скорость, честность и открытость в работе.",
+        "Мы замечаем каждый ваш старт и каждое усилие. Благодарим вас.",
+        "Спасибо, что помогаете людям находить своё место в Польше.",
+        "С вами мы можем больше. Спасибо за надёжное партнёрство.",
+        "Вы — наша сила на рынке. Спасибо, что остаётесь с нами."
+      ],
+      uk: [
+        "Дякуємо, що працюєте з нами. Ми цінуємо кожного з вас!",
+        "Ваші кандидати — наша спільна перемога. Дякуємо за партнерство.",
+        "Разом ми даємо людям роботу та стабільність. Дякуємо, що ви з нами.",
+        "Ви робите ринок чеснішим і сильнішим. Нам важливо працювати поруч з вами.",
+        "Дякуємо за довіру до TopHire. Ми завжди на вашому боці.",
+        "Кожен старт — це чиясь нова історія. Дякуємо, що запускаєте їх.",
+        "Ваш внесок у команду безцінний. Ми бачимо це щодня.",
+        "Дякуємо за вашу відповідальність та увагу до людей.",
+        "З вами рекрутинг стає простішим і більш людяним. Ми це цінуємо.",
+        "Ви — ключова частина нашої системи. Дякуємо, що обираєте нас.",
+        "Дякуємо за вашу швидкість, чесність та відкритість у роботі.",
+        "Ми помічаємо кожен старт і кожне зусилля. Щиро дякуємо вам.",
+        "Дякуємо, що допомагаєте людям знаходити своє місце в Польщі.",
+        "З вами ми можемо більше. Дякуємо за надійне партнерство.",
+        "Ви — наша сила на ринку. Дякуємо, що залишаєтеся з нами."
+      ]
+    };
+
+    function pickRandomPhrase() {
+      var list = phrases[lang] || phrases["ru"];
+      if (!list || !list.length) return "";
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function showToast() {
+      if (!toast) return;
+      if (textEl) {
+        textEl.textContent = pickRandomPhrase();
+      }
+      toast.classList.remove("toast-hidden");
+
+      if (toast._hideTimer) {
+        clearTimeout(toast._hideTimer);
+      }
+      // Прячем тост через 10–15 секунд
+      toast._hideTimer = setTimeout(function () {
+        toast.classList.add("toast-hidden");
+      }, 10000 + Math.random() * 5000);
+
+      // Запоминаем время последнего показа в этой вкладке
+      try {
+        sessionStorage.setItem("tophire_toast_last_shown", Date.now().toString());
+      } catch (e) {}
+    }
+
+    var closeIcon = toast.querySelector(".toast-cross-icon");
+    if (closeIcon) {
+      closeIcon.addEventListener("click", function () {
+        toast.classList.add("toast-hidden");
+      });
+    }
+
+    var now = Date.now();
+    var lastShown = 0;
+    try {
+      var raw = sessionStorage.getItem("tophire_toast_last_shown");
+      if (raw) {
+        lastShown = parseInt(raw, 10) || 0;
+      }
+    } catch (e) {
+      lastShown = 0;
+    }
+
+    var FIVE_MIN = 5 * 60 * 1000;
+
+    if (!lastShown) {
+      // Первый визит в этой вкладке: показываем один раз через 2–5 секунд
+      setTimeout(function () {
+        showToast();
+      }, 2000 + Math.random() * 3000);
+    } else {
+      var since = now - lastShown;
+      if (since >= FIVE_MIN) {
+        // С прошлого показа прошло 5+ минут — можем показать снова
+        // но не мгновенно при переходе, а через 5–30 секунд
+        var delay = 5000 + Math.random() * 25000;
+        setTimeout(function () {
+          showToast();
+        }, delay);
+      }
+      // Если прошло меньше 5 минут — на этой загрузке ничего не показываем.
+    }
+  });
+</script>
+
+
+{% endif %}
+
+
+<footer class="py-4 mt-5 border-top">
+  <div class="container d-flex justify-content-between">
+    <span>© {{ 2025 }} {{ BRAND }}</span>
+    <span class="small-note">{{ "Стримана, зрозуміла CRM для рекрутингу" if current_lang=="uk" else "Сдержанная, понятная CRM для рекрутинга" }}</span>
+  </div>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  // Мини-игра: клик по смайлику
+  var target = document.getElementById("relaxTarget");
+  var startBtn = document.getElementById("relaxStartBtn");
+  var scoreEl = document.getElementById("relaxScore");
+  var timerEl = document.getElementById("relaxTimer");
+  var gameArea = document.querySelector(".relax-game-area");
+  var gameTimer = null;
+  var gameRunning = false;
+  var timeLeft = 15;
+  var score = 0;
+
+  function placeTarget() {
+    if (!gameArea || !target) return;
+    var rect = gameArea.getBoundingClientRect();
+    var size = 32;
+    var maxLeft = rect.width - size - 10;
+    var maxTop = rect.height - size - 10;
+    var left = Math.random() * maxLeft + 5;
+    var top = Math.random() * maxTop + 5;
+    target.style.left = left + "px";
+    target.style.top = top + "px";
+  }
+
+  function resetGame() {
+    score = 0;
+    timeLeft = 15;
+    if (scoreEl) scoreEl.textContent = "0";
+    if (timerEl) timerEl.textContent = "15";
+    if (target) target.style.display = "none";
+  }
+
+  if (startBtn && target && gameArea) {
+    startBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (gameRunning) return;
+      gameRunning = true;
+      resetGame();
+      target.style.display = "inline-block";
+      placeTarget();
+      gameTimer = setInterval(function () {
+        timeLeft -= 1;
+        if (timerEl) timerEl.textContent = timeLeft.toString();
+        if (timeLeft <= 0) {
+          clearInterval(gameTimer);
+          gameRunning = false;
+          if (target) target.style.display = "none";
+        }
+      }, 1000);
+    });
+
+    target.addEventListener("click", function () {
+      if (!gameRunning) return;
+      score += 1;
+      if (scoreEl) scoreEl.textContent = score.toString();
+      placeTarget();
+    });
+  }
+
+
+  // Мини-игра 2: реакция
+  var reactionArea = document.getElementById("reactionArea");
+  var reactionStartBtn = document.getElementById("reactionStartBtn");
+  var reactionResult = document.getElementById("reactionResult");
+  var reactionHint = document.getElementById("reactionHint");
+  var reactionTimeout = null;
+  var reactionStartTime = null;
+  var reactionWaiting = false;
+  var reactionReady = false;
+
+  function resetReaction() {
+    reactionWaiting = false;
+    reactionReady = false;
+    reactionStartTime = null;
+    if (reactionTimeout) clearTimeout(reactionTimeout);
+    if (reactionArea) {
+      reactionArea.classList.remove("ready", "go");
+      reactionArea.classList.add("border");
+    }
+    if (reactionHint) {
+      reactionHint.textContent = "Нажмите «Старт теста», затем ждите цвет.";
+    }
+  }
+
+  if (reactionStartBtn && reactionArea) {
+    resetReaction();
+    reactionStartBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      resetReaction();
+      if (reactionResult) reactionResult.textContent = "–";
+      reactionWaiting = true;
+      if (reactionHint) reactionHint.textContent = "Ждите, поле станет зелёным...";
+      if (reactionArea) {
+        reactionArea.classList.remove("go");
+        reactionArea.classList.add("ready");
+      }
+      var delay = 1500 + Math.random() * 3000;
+      reactionTimeout = setTimeout(function() {
+        if (!reactionWaiting) return;
+        reactionWaiting = false;
+        reactionReady = true;
+        reactionStartTime = performance.now();
+        if (reactionArea) {
+          reactionArea.classList.remove("ready");
+          reactionArea.classList.add("go");
+        }
+        if (reactionHint) {
+          reactionHint.textContent = "Кликайте!";
+        }
+      }, delay);
+    });
+
+    reactionArea.addEventListener("click", function() {
+      if (reactionWaiting) {
+        // Слишком рано
+        resetReaction();
+        if (reactionResult) reactionResult.textContent = "слишком рано";
+        return;
+      }
+      if (!reactionReady || !reactionStartTime) {
+        return;
+      }
+      var now = performance.now();
+      var diff = Math.round(now - reactionStartTime);
+      reactionReady = false;
+      if (reactionResult) reactionResult.textContent = diff.toString();
+      if (reactionHint) reactionHint.textContent = "Нажмите «Старт теста», чтобы попробовать ещё раз.";
+      if (reactionArea) {
+        reactionArea.classList.remove("go", "ready");
+      }
+    });
+  }
+
+  // Мини-игра 3: память
+  var memoryCards = document.querySelectorAll(".memory-card");
+  var memoryMovesEl = document.getElementById("memoryMoves");
+  var memoryMatchesEl = document.getElementById("memoryMatches");
+  var memoryRestartBtn = document.getElementById("memoryRestartBtn");
+  var memoryValues = ["A","A","B","B"];
+  var memoryOpen = [];
+  var memoryLocked = false;
+  var memoryMoves = 0;
+  var memoryMatches = 0;
+
+  function shuffleMemory() {
+    for (var i = memoryValues.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = memoryValues[i];
+      memoryValues[i] = memoryValues[j];
+      memoryValues[j] = tmp;
+    }
+  }
+
+  function resetMemory() {
+    memoryMoves = 0;
+    memoryMatches = 0;
+    memoryOpen = [];
+    memoryLocked = false;
+    shuffleMemory();
+    if (memoryMovesEl) memoryMovesEl.textContent = "0";
+    if (memoryMatchesEl) memoryMatchesEl.textContent = "0";
+    if (memoryCards) {
+      memoryCards.forEach(function(btn, idx) {
+        btn.textContent = "?";
+        btn.disabled = false;
+        btn.dataset.value = memoryValues[idx];
+      });
+    }
+  }
+
+  if (memoryCards && memoryCards.length) {
+    resetMemory();
+    memoryCards.forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        if (memoryLocked) return;
+        var index = btn.getAttribute("data-index");
+        if (btn.textContent !== "?") return;
+        btn.textContent = btn.dataset.value || "?";
+        memoryOpen.push(btn);
+        if (memoryOpen.length === 2) {
+          memoryLocked = true;
+          memoryMoves += 1;
+          if (memoryMovesEl) memoryMovesEl.textContent = memoryMoves.toString();
+          var a = memoryOpen[0];
+          var b = memoryOpen[1];
+          if ((a.dataset.value || "") === (b.dataset.value || "")) {
+            // совпадение
+            memoryMatches += 1;
+            if (memoryMatchesEl) memoryMatchesEl.textContent = memoryMatches.toString();
+            a.disabled = true;
+            b.disabled = true;
+            memoryOpen = [];
+            memoryLocked = false;
+          } else {
+            // не совпало
+            setTimeout(function() {
+              a.textContent = "?";
+              b.textContent = "?";
+              memoryOpen = [];
+              memoryLocked = false;
+            }, 700);
+          }
+        }
+      });
+    });
+  }
+
+  if (memoryRestartBtn) {
+    memoryRestartBtn.addEventListener("click", function(e) {
+      e.preventDefault();
+      resetMemory();
+    });
+  }
+
+  // Дыхание: цикл вдох-задержка-выдох
+  var breathBtn = document.getElementById("breathStartBtn");
+  var breathCircle = document.getElementById("breathCircle");
+  var breathPhaseEl = document.getElementById("breathPhase");
+  var breathTimer = null;
+  var phases = [
+    { name: "Вдох", className: "inhale", duration: 4000 },
+    { name: "Задержка", className: "", duration: 4000 },
+    { name: "Выдох", className: "exhale", duration: 6000 }
+  ];
+  var currentPhase = 0;
+  var breathing = false;
+
+  function setPhase(index) {
+    if (!breathCircle || !breathPhaseEl) return;
+    var phase = phases[index];
+    breathCircle.classList.remove("inhale", "exhale");
+    if (phase.className) breathCircle.classList.add(phase.className);
+    breathPhaseEl.textContent = phase.name;
+  }
+
+  function startBreathing() {
+    if (!breathCircle || !breathPhaseEl) return;
+    breathing = true;
+    currentPhase = 0;
+    setPhase(currentPhase);
+    if (breathTimer) clearTimeout(breathTimer);
+
+    function next() {
+      if (!breathing) return;
+      currentPhase = (currentPhase + 1) % phases.length;
+      setPhase(currentPhase);
+      breathTimer = setTimeout(next, phases[currentPhase].duration);
+    }
+
+    breathTimer = setTimeout(next, phases[currentPhase].duration);
+  }
+
+  function stopBreathing() {
+    breathing = false;
+    if (breathTimer) clearTimeout(breathTimer);
+    if (breathCircle) {
+      breathCircle.classList.remove("inhale", "exhale");
+    }
+    if (breathPhaseEl) {
+      breathPhaseEl.textContent = "Нажмите «Старт»";
+    }
+  }
+
+  if (breathBtn) {
+    breathBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (!breathing) {
+        startBreathing();
+      } else {
+        stopBreathing();
+      }
+    });
+  }
+});
+</script>
+
+</body></html>

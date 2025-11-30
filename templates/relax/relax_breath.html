@@ -1,0 +1,188 @@
+{% extends "layout.html" %}{% block content %}
+<h3 class="mb-3">Дыхательные практики</h3>
+<p class="text-muted">
+  Дыхательные упражнения помогают быстро снизить уровень физиологического напряжения: замедляют пульс, выравнивают дыхание
+  и дают мозгу сигнал «обстановка безопасна».
+</p>
+
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Выберите практику</h5>
+        <ul class="list-group mb-3">
+          <button type="button" class="list-group-item list-group-item-action active" data-pattern="box">
+            «Квадратное дыхание» 4‑4‑4‑4
+            <div class="small text-muted">Помогает быстро «остановить» стрессовую реакцию и собраться.</div>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action" data-pattern="478">
+            Дыхание 4‑7‑8
+            <div class="small text-muted">Подходит, когда чувствуете тревогу или не можете уснуть.</div>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action" data-pattern="calm">
+            Мягкое дыхание 5‑5
+            <div class="small text-muted">Поддерживает спокойный, ровный ритм в течение дня.</div>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action" data-pattern="coherent">
+            Коэрентное дыхание 5‑5 (через нос)
+            <div class="small text-muted">Стабилизирует сердечный ритм и подходит для регулярной практики 5–10 минут в день.</div>
+          </button>
+          <button type="button" class="list-group-item list-group-item-action" data-pattern="long_exhale">
+            Дыхание с удлинённым выдохом 3‑6
+            <div class="small text-muted">Помогает, когда нужно быстро уменьшить внутреннее напряжение и «сбросить пар».</div>
+          </button>
+        </ul>
+        <p class="mb-1"><strong id="patternName">Квадратное дыхание 4‑4‑4‑4</strong></p>
+        <p class="small text-muted mb-0" id="patternDesc">
+          Вдох на 4 счёта — пауза 4 — выдох 4 — пауза 4. Сделайте 1–2 минуты, чтобы переключиться после сложного звонка.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card p-4 text-center">
+      <style>
+        #breathCircle {
+          width: 140px;
+          height: 140px;
+          margin: auto;
+          border-radius: 50%;
+          background: #e3f2fd;
+          transition: transform 2s ease-in-out;
+        }
+      </style>
+      <div id="breathCircle"></div>
+      <div id="breathPhase" class="mt-3 fs-5">Готовы?</div>
+      <div class="mt-3">
+        <button id="startBreath" class="btn btn-primary me-2">Старт</button>
+        <button id="stopBreath" class="btn btn-outline-secondary">Стоп</button>
+      </div>
+      <p class="small text-muted mt-3 mb-0">
+        Советуем делать от 5 до 10 циклов подряд. Если кружится голова — остановитесь и дышите в комфортном темпе.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+const patterns = {
+  "box": {
+    name: "Квадратное дыхание 4‑4‑4‑4",
+    desc: "Вдох 4 — пауза 4 — выдох 4 — пауза 4. Хорошо подходит после напряжённых задач или звонков.",
+    inhale: 4, hold1: 4, exhale: 4, hold2: 4
+  },
+  "478": {
+    name: "Дыхание 4‑7‑8",
+    desc: "Вдох 4 — задержка 7 — выдох 8. Помогает снизить тревогу и напряжение перед сном или важным разговором.",
+    inhale: 4, hold1: 7, exhale: 8, hold2: 0
+  },
+  "calm": {
+    name: "Мягкое дыхание 5‑5",
+    desc: "Ровный вдох 5 — выдох 5. Можно использовать в течение дня, чтобы поддерживать спокойный ритм.",
+    inhale: 5, hold1: 0, exhale: 5, hold2: 0
+  },
+  "coherent": {
+    name: "Коэрентное дыхание 5‑5 (через нос)",
+    desc: "Носовой вдох 5 — носовой выдох 5. Такая частота дыхания поддерживает оптимальный баланс возбуждения и расслабления.",
+    inhale: 5, hold1: 0, exhale: 5, hold2: 0
+  },
+  "long_exhale": {
+    name: "Дыхание с удлинённым выдохом 3‑6",
+    desc: "Вдох 3 — выдох 6. Удлинённый выдох активирует парасимпатическую нервную систему и помогает сбросить напряжение.",
+    inhale: 3, hold1: 0, exhale: 6, hold2: 0
+  }
+};
+
+let currentPattern = "box";
+let running = false;
+let cycleTimeout = null;
+
+const circle = document.getElementById("breathCircle");
+const phase = document.getElementById("breathPhase");
+const startBtn = document.getElementById("startBreath");
+const stopBtn = document.getElementById("stopBreath");
+const patternNameEl = document.getElementById("patternName");
+const patternDescEl = document.getElementById("patternDesc");
+
+function applyPattern(key) {
+  currentPattern = key;
+  const p = patterns[key];
+  patternNameEl.textContent = p.name;
+  patternDescEl.textContent = p.desc;
+}
+
+function clearCycle() {
+  running = false;
+  if (cycleTimeout) {
+    clearTimeout(cycleTimeout);
+    cycleTimeout = null;
+  }
+  circle.style.transform = "scale(1.0)";
+  phase.textContent = "Готовы?";
+}
+
+function runCycle() {
+  if (!running) return;
+  const p = patterns[currentPattern];
+
+  // Вдох
+  phase.textContent = "Вдох";
+  circle.style.transform = "scale(1.2)";
+  const inhaleMs = p.inhale * 1000;
+  const hold1Ms = (p.hold1 || 0) * 1000;
+  const exhaleMs = p.exhale * 1000;
+  const hold2Ms = (p.hold2 || 0) * 1000;
+
+  cycleTimeout = setTimeout(() => {
+    // Пауза 1
+    if (!running) return;
+    if (hold1Ms > 0) {
+      phase.textContent = "Пауза";
+      circle.style.transform = "scale(1.0)";
+    }
+
+    cycleTimeout = setTimeout(() => {
+      // Выдох
+      if (!running) return;
+      phase.textContent = "Выдох";
+      circle.style.transform = "scale(0.8)";
+
+      cycleTimeout = setTimeout(() => {
+        // Пауза 2 или сразу следующий цикл
+        if (!running) return;
+        if (hold2Ms > 0) {
+          phase.textContent = "Пауза";
+          circle.style.transform = "scale(1.0)";
+          cycleTimeout = setTimeout(() => {
+            if (running) runCycle();
+          }, hold2Ms);
+        } else {
+          runCycle();
+        }
+      }, exhaleMs);
+    }, hold1Ms || 0);
+  }, inhaleMs);
+}
+
+startBtn.onclick = function() {
+  if (running) return;
+  running = true;
+  runCycle();
+};
+
+stopBtn.onclick = function() {
+  clearCycle();
+};
+
+document.querySelectorAll("[data-pattern]").forEach(btn => {
+  btn.addEventListener("click", function() {
+    document.querySelectorAll("[data-pattern]").forEach(b => b.classList.remove("active"));
+    this.classList.add("active");
+    applyPattern(this.getAttribute("data-pattern"));
+  });
+});
+
+applyPattern("box");
+</script>
+{% endblock %}

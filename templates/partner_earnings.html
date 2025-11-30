@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Мои начисления</h1>
+{% if rows %}
+  <p class="small text-muted">
+    Нажмите кнопку «Детали» напротив месяца, чтобы увидеть список кандидатов и понять, как сформировалась сумма.
+  </p>
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>Месяц</th>
+        <th class="text-end">Трудоустройств</th>
+        <th class="text-end">Начислено, EUR</th>
+        <th class="text-end">Детали</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      {% set ym = r.ym %}
+      {% set items = details_by_month.get(ym, []) %}
+      <tr>
+        <td>{{ ym }}</td>
+        <td class="text-end">{{ r.starts }}</td>
+        <td class="text-end">{{ '%.2f'|format(r.total) }}</td>
+        <td class="text-end">
+          {% if items %}
+            <button class="btn btn-link btn-sm toggle-month-details" data-target="m{{ loop.index }}">Детали</button>
+          {% else %}
+            <span class="text-muted small">—</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% if items %}
+      <tr id="m{{ loop.index }}" class="month-details-row" style="display: none;">
+        <td colspan="4">
+          <div class="small text-muted mb-2">
+            Сумма за месяц = сумма комиссий по всем вашим кандидатам, вышедшим на работу в этом месяце.
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Кандидат</th>
+                  <th>Вакансия</th>
+                  <th class="text-center">Старт</th>
+                  <th class="text-end">Сумма, EUR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in items %}
+                <tr>
+                  <td>{{ c.candidate_name }}</td>
+                  <td>{{ c.job_title }}</td>
+                  <td class="text-center">{{ c.start_date }}</td>
+                  <td class="text-end">{{ '%.2f'|format(c.amount) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </td>
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th>Всего</th>
+        <th></th>
+        <th class="text-end">{{ '%.2f'|format(total_all) }}</th>
+        <th></th>
+      </tr>
+    </tfoot>
+  </table>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var buttons = document.querySelectorAll(".toggle-month-details");
+    buttons.forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        var targetId = btn.getAttribute("data-target");
+        var row = document.getElementById(targetId);
+        if (!row) return;
+        if (row.style.display === "none" || row.style.display === "") {
+          // Скрываем все остальные строки
+          document.querySelectorAll(".month-details-row").forEach(function (r) {
+            if (r !== row) r.style.display = "none";
+          });
+          row.style.display = "table-row";
+        } else {
+          row.style.display = "none";
+        }
+      });
+    });
+  });
+  </script>
+{% else %}
+  <div class="alert alert-info">
+    Пока нет начислений. Как только ваши кандидаты отработают 30+ дней, суммы появятся здесь.
+  </div>
+{% endif %}
+{% endblock %}

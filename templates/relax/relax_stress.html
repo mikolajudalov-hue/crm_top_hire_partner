@@ -1,0 +1,550 @@
+{% extends "layout.html" %}{% block content %}
+<h3 class="mb-3">Оценка уровня стресса</h3>
+<p class="text-muted">
+  Выберите тип теста. Тест 1 помогает оценить текущий уровень стресса за последние дни, тест 2 — обратить внимание на признаки эмоционального выгорания.
+</p>
+
+<div class="row g-3 mb-4">
+  {% for t in tests.values() %}
+  <div class="col-md-6">
+    <div class="card h-100 {% if current_test and current_test.id == t.id %}border-primary{% endif %}">
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title">
+          {{ t.title }}
+          {% if current_test and current_test.id == t.id %}
+          <span class="badge bg-primary ms-1">выбран</span>
+          {% endif %}
+        </h5>
+        <p class="card-text flex-grow-1">{{ t.subtitle }}</p>
+        <a href="{{ url_for('relax.relax_stress', test=t.id) }}" class="btn btn-outline-primary mt-2">
+          Открыть тест
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if current_test %}
+  <hr class="mb-4">
+  <h4 class="mb-3">{{ current_test.title }}</h4>
+
+  {% if current_test.id == "daily" %}
+    <p class="text-muted">
+      Отметьте, насколько каждое утверждение похоже на вашу ситуацию за последние 3–7 дней.
+      1 — совсем не похоже, 5 — полностью про вас.
+    </p>
+  {% elif current_test.id == "burnout" %}
+    <p class="text-muted">
+      Этот тест не ставит диагноз, но помогает заметить возможные признаки выгорания. Смотрите на период последних нескольких недель.
+      1 — совсем не про вас, 5 — очень похоже.
+    </p>
+  {% elif current_test.id == "focus" %}
+    <p class="text-muted">
+      Этот тест про концентрацию и отвлечения. Вспомните, как вы обычно работаете в последние 7–10 дней.
+      1 — совсем не про вас, 5 — очень похоже.
+    </p>
+  {% elif current_test.id == "balance" %}
+    <p class="text-muted">
+      Этот тест про баланс между работой и личной жизнью. Оценивайте свой типичный месяц.
+      1 — совсем не про вас, 5 — очень похоже.
+    </p>
+  {% elif current_test.id == "energy" %}
+    <p class="text-muted">
+      Здесь мы смотрим на уровень энергии и восстановление за последние 2–3 недели.
+      1 — совсем не про вас, 5 — очень похоже.
+    </p>
+  {% elif current_test.id == "anxiety" %}
+    <p class="text-muted">
+      Этот тест про тревожность и фоновое напряжение. Смотрите на своё состояние в последнее время.
+      1 — совсем не про вас, 5 — очень похоже.
+    </p>
+  {% endif %}
+
+
+  <form method="post" class="mb-4">
+    <input type="hidden" name="test_id" value="{{ current_test.id }}">
+
+    {% if current_test.id == "daily" %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Сон и отдых</h5>
+          <p>Мне тяжело уснуть или я часто просыпаюсь среди ночи.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q1" id="q1{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="q1{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Напряжение в теле</h5>
+          <p>Я часто чувствую зажатость в шее, плечах или голове.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q2" id="q2{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="q2{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Концентрация</h5>
+          <p>Мне сложно сосредоточиться на задачах, мысли постоянно «убегают».</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q3" id="q3{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="q3{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Раздражительность</h5>
+          <p>Я быстро раздражаюсь из‑за мелочей и тяжело переключаюсь.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q4" id="q4{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="q4{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Усталость</h5>
+          <p>Даже после выходных я чувствую себя уставшим(ой).</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q5" id="q5{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="q5{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% elif current_test.id == "burnout" %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Энергия</h5>
+          <p>Большую часть времени я чувствую себя уставшим(ой) даже после отдыха.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q1" id="bq1{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="bq1{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Интерес к работе</h5>
+          <p>Мне всё труднее находить интерес или смысл в том, что я делаю.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q2" id="bq2{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="bq2{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Циничность</h5>
+          <p>Я всё чаще думаю о работе в негативном ключе или с цинизмом.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q3" id="bq3{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="bq3{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Ошибки и забывчивость</h5>
+          <p>Я стал(а) чаще ошибаться, путаться в задачах или что‑то забывать.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q4" id="bq4{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="bq4{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Отстранённость</h5>
+          <p>Мне хочется меньше контактировать с людьми и «отключаться» от всего.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q5" id="bq5{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="bq5{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    
+    {% elif current_test.id == "focus" %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Отвлечения</h5>
+          <p>Во время работы я часто отвлекаюсь на телефон, мессенджеры или соцсети.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q1" id="fq1{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="fq1{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Скачки между задачами</h5>
+          <p>Я часто перепрыгиваю между задачами и вкладками, не доводя дела до конца.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q2" id="fq2{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="fq2{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Возврат к задаче</h5>
+          <p>После отвлечения мне трудно вернуться к тому, что я делал(а) до этого.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q3" id="fq3{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="fq3{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Прокрастинация</h5>
+          <p>Я часто откладываю важные задачи, переключаясь на более лёгкие или неважные дела.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q4" id="fq4{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="fq4{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Фокус‑сессии</h5>
+          <p>Я редко работаю сфокусированно хотя бы 20–30 минут подряд без отвлечений.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q5" id="fq5{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="fq5{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    {% elif current_test.id == "balance" %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Вечера и выходные</h5>
+          <p>Даже в выходные и по вечерам я часто продолжаю думать о работе или проверять рабочие чаты.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q1" id="blq1{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="blq1{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Границы</h5>
+          <p>Мне сложно отказываться от дополнительных задач, даже если я перегружен(а).</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q2" id="blq2{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="blq2{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Время для себя</h5>
+          <p>У меня почти нет времени на отдых, который действительно помогает мне восстановиться.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q3" id="blq3{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="blq3{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Хобби и интересы</h5>
+          <p>За работой у меня почти не остаётся сил и времени на хобби и личные интересы.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q4" id="blq4{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="blq4{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Чувство вины за отдых</h5>
+          <p>Когда я отдыхаю, мне часто кажется, что я «должен(на) работать».</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q5" id="blq5{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="blq5{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    {% elif current_test.id == "energy" %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Утренний заряд</h5>
+          <p>Просыпаясь, я уже чувствую усталость и отсутствие энергии.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q1" id="enq1{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="enq1{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Середина дня</h5>
+          <p>К середине дня я чувствую сильное падение энергии и работоспособности.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q2" id="enq2{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="enq2{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Восстановление</h5>
+          <p>Даже после отдыха или выходных я чувствую, что не восстановился(лась).</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q3" id="enq3{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="enq3{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Физическое состояние</h5>
+          <p>Я часто ощущаю физические симптомы усталости: тяжесть, ломоту, головную боль.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q4" id="enq4{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="enq4{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Помощь отдыха</h5>
+          <p>Даже когда я специально планирую отдых, он мало влияет на моё ощущение энергии.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q5" id="enq5{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="enq5{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    {% elif current_test.id == "anxiety" %}
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Фоновая тревога</h5>
+          <p>Часто есть ощущение внутреннего напряжения или беспокойства «ни о чём конкретном».</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q1" id="anq1{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="anq1{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Мысли‑катастрофы</h5>
+          <p>Мне часто в голову приходят сценарии «а вдруг всё пойдёт плохо».</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q2" id="anq2{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="anq2{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Напряжение в теле</h5>
+          <p>При волнении я замечаю напряжение в теле: ком в горле, тяжесть в груди, спазмы.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q3" id="anq3{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="anq3{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Тревога про работу</h5>
+          <p>Я часто переживаю, что не справлюсь с задачами, ошибусь или подведу других.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q4" id="anq4{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="anq4{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">Сон и отключение</h5>
+          <p>Вечером мне сложно «отключить голову» и перестать прокручивать мысли.</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for i in range(1,6) %}
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="q5" id="anq5{{ i }}" value="{{ i }}">
+              <label class="form-check-label" for="anq5{{ i }}">{{ i }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary mt-2">Посчитать результат</button>
+  </form>
+
+  {% if result %}
+    <div class="alert alert-info">
+      <h5 class="alert-heading mb-2">
+        {{ result.test.title if result.test }}<br>
+        Балл: {{ result.score }}, уровень — {{ result.level|capitalize }}.
+      </h5>
+      <p class="mb-1">{{ result.message }}</p>
+      <p class="mb-0 small text-muted">
+        Результат сохранён в историю Relax. Эти данные не используются нигде, кроме этой вкладки.
+      </p>
+    </div>
+  {% else %}
+    <p class="small text-muted">
+      Эти тесты носят ориентировочный характер и не заменяют профессиональную диагностику.
+      Они помогают вовремя заметить изменения и напомнить себе о важности отдыха.
+    </p>
+  {% endif %}
+{% else %}
+  <p class="small text-muted">
+    Выберите один из тестов выше, чтобы увидеть вопросы.
+  </p>
+{% endif %}
+{% endblock %}

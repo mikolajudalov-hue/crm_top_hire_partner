@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+{% block title %}Обучение{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+    <div>
+      <h1 class="h3 mb-1">Обучение для рекрутёров и партнёров</h1>
+      <p class="text-muted mb-0">
+        Курс по рекрутингу на польские и немецкие вакансии разнорабочих: от документов до сервиса для партнёров.
+      </p>
+    </div>
+    <div class="d-flex flex-column align-items-end gap-2">
+      <a class="btn btn-outline-primary" href="{{ url_for('training.partner_quiz') }}">
+        Пройти тест «Насколько вы хороший партнёр?»
+      </a>
+      {% if g.user and g.user.role in ['admin', 'director'] %}
+      <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('training.admin_lessons') }}">
+        Управление уроками
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not sections %}
+    <div class="alert alert-warning">
+      Разделы обучения ещё не настроены. Обратитесь к администратору.
+    </div>
+  {% else %}
+    <div class="row g-3">
+      {% for s in sections %}
+      <div class="col-md-6">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body d-flex flex-column">
+            <h2 class="h5 mb-2">{{ s.title }}</h2>
+            <p class="text-muted small mb-3">{{ s.description }}</p>
+            <a class="btn btn-sm btn-primary mt-auto align-self-start" href="{{ url_for('training.section', section_id=s.id) }}">
+              Открыть раздел
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

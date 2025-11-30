@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block title %}Результаты теста партнёра{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <a href="{{ url_for('training.index') }}" class="btn btn-link btn-sm ps-0">&larr; Обучение</a>
+
+  <h1 class="h3 mb-2">Результат теста «Насколько вы хороший партнёр?»</h1>
+
+  <div class="alert alert-info">
+    <div class="fw-semibold mb-1">Ваш уровень: {{ level|capitalize }}</div>
+    <div>Средний балл по шкале 1–5: <strong>{{ score }}</strong></div>
+    <div class="mt-2">{{ message }}</div>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Ваши ответы</h2>
+      <ol class="mb-0">
+        {% for q in questions %}
+        <li class="mb-1">
+          <div class="fw-semibold">{{ q.text }}</div>
+          <div class="small text-muted">Оценка: {{ answers[q.id|string] }}</div>
+        </li>
+        {% endfor %}
+      </ol>
+    </div>
+  </div>
+</div>
+{% endblock %}

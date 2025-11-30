@@ -1,0 +1,287 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Кандидаты к выплате партнёрам</h1>
+
+<form class="row g-2 mb-3" method="get">
+  <div class="col-auto">
+    <label class="form-label small mb-1">Рассчитать на дату</label>
+    <input type="date" class="form-control" name="as_of" value="{{ as_of }}">
+  </div>
+  <div class="col-auto align-self-end">
+    <button class="btn btn-primary">Пересчитать</button>
+  </div>
+  <div class="col-auto align-self-end">
+    <div class="form-check ms-2">
+      <input class="form-check-input" type="checkbox" value="1" id="show_all" name="show_all" {% if show_all %}checked{% endif %}>
+      <label class="form-check-label small" for="show_all">
+        Показывать всех кандидатов
+      </label>
+    </div>
+  </div>
+</form>
+
+
+{% if rows %}
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card kpi-card p-3">
+        <div class="label small text-muted">К выплате сегодня (по дням выплат)</div>
+        <div class="value h4 mb-0">{{ '%.2f'|format(due_today_total) }} EUR</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card kpi-card p-3">
+        <div class="label small text-muted">В ближайшие 7 дней</div>
+        <div class="value h4 mb-0">{{ '%.2f'|format(due_week_total) }} EUR</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card kpi-card p-3">
+        <div class="label small text-muted">Всего кандидатов с 30+ днями</div>
+        <div class="value h4 mb-0">{{ rows|length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-5">
+      <div class="card p-3 h-100">
+        <h5 class="mb-2">Партнёры и дни выплат</h5>
+        <p class="small text-muted mb-2">
+          Суммируем всех людей с 30+ отработанными днями. Помогает понять, 
+          кому и когда примерно придётся платить.
+        </p>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Партнёр</th>
+                <th class="text-center">День выплат</th>
+                <th class="text-center">След. дата</th>
+                <th class="text-end">Кандидатов</th>
+                <th class="text-end">Сумма, EUR</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in partners_sorted %}
+              <tr>
+                <td>
+                  {{ p.partner_name }}
+                  {% if p.bank_account %}
+                    <div class="small text-muted">{{ p.bank_account }}</div>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if p.settlement_day %}
+                    {{ p.settlement_day }} число
+                  {% else %}
+                    <span class="text-muted">не задано</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if p.next_pay_date %}
+                    {{ p.next_pay_date.strftime('%d.%m.%Y') }}
+                    <div class="small text-muted">
+                      {% if p.days_until_pay == 0 %}
+                        Сегодня
+                      {% elif p.days_until_pay == 1 %}
+                        Завтра
+                      {% elif p.days_until_pay is not none and p.days_until_pay >= 0 %}
+                        Через {{ p.days_until_pay }} дн.
+                      {% else %}
+                        Просрочено
+                      {% endif %}
+                    </div>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">{{ p.count }}</td>
+                <td class="text-end">{{ '%.2f'|format(p.total) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <div class="card p-3 h-100">
+        <h5 class="mb-2">Разбивка по проектам</h5>
+        <p class="small text-muted mb-2">
+          Для каждого партнёра — по каким вакансиям сейчас накопились выплаты.
+        </p>
+        <div class="accordion" id="projectsAccordion">
+          {% for p in partners_sorted %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ loop.index }}">
+              <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}">
+                {{ p.partner_name }} — {{ p.count }} канд., {{ '%.2f'|format(p.total) }} EUR
+              </button>
+            </h2>
+            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#projectsAccordion">
+              <div class="accordion-body p-2">
+                <table class="table table-sm mb-0 align-middle">
+                  <thead>
+                    <tr>
+                      <th>Вакансия</th>
+                      <th class="text-end">Канд.</th>
+                      <th class="text-end">Сумма, EUR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for job_title, j in p.jobs.items() %}
+                    <tr>
+                      <td>{{ job_title }}</td>
+                      <td class="text-end">{{ j.count }}</td>
+                      <td class="text-end">{{ '%.2f'|format(j.amount) }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h4 class="mt-4 mb-2">К выплате в этот расчётный период</h4>
+  <p class="small text-muted">
+    Сюда попадают только кандидаты, у которых день выплаты уже наступил или не задан (можно платить сразу).
+  </p>
+
+  {% if not show_all %}
+  <div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Партнёр</th>
+          <th class="text-center">День выплат</th>
+          <th class="text-end">Кандидатов</th>
+          <th class="text-end">Всего дней</th>
+          <th class="text-end">Сумма, EUR</th>
+          <th class="text-end"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in pay_now_by_partner %}
+        <tr>
+          <td>{{ p.partner_name }}</td>
+          <td class="text-center">
+            {% if p.settlement_day %}
+              {{ p.settlement_day }} число
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-end">{{ p.count }}</td>
+          <td class="text-end">{{ p.total_days }}</td>
+          <td class="text-end">{{ '%.2f'|format(p.total_amount) }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('finance.finance_partner_payment', partner_id=p.partner_id, as_of=as_of) }}"
+               class="btn btn-sm btn-outline-success">
+              Платить партнёру
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="table-responsive mb-4">
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>Партнёр</th>
+          <th>Кандидат</th>
+          <th>Вакансия</th>
+          <th>Дата выхода</th>
+          <th class="text-end">Дней отработано</th>
+          <th class="text-end">Сумма, EUR</th>
+          <th class="text-center">День выплат</th>
+          <th>Счёт</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in pay_now_rows %}
+        <tr>
+          <td>{{ r.partner_name }}</td>
+          <td>{{ r.cand_name }}</td>
+          <td>{{ r.job_title }}</td>
+          <td>{{ r.start_date }}</td>
+          <td class="text-end">{{ r.days_worked }}</td>
+          <td class="text-end">{{ '%.2f'|format(r.amount) }}</td>
+          <td class="text-center">
+            {% if r.settlement_day %}{{ r.settlement_day }} число{% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td class="small text-muted">{{ r.bank_account or '—' }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('finance.finance_partner_payment', partner_id=r.partner_id, as_of=as_of) }}"
+               class="btn btn-sm btn-outline-success">
+              Платить партнёру
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+
+  <h4 class="mt-4 mb-2">Накоплено, но день выплаты ещё не наступил</h4>
+  <p class="small text-muted">
+    Эти кандидаты уже отработали 30+ дней, но у партнёра день выплат в будущем. Можно планировать деньги, но не платить сейчас.
+  </p>
+  <div class="table-responsive mb-4">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>Партнёр</th>
+          <th>Кандидат</th>
+          <th>Вакансия</th>
+          <th>Дата выхода</th>
+          <th class="text-end">Дней отработано</th>
+          <th class="text-end">Сумма, EUR</th>
+          <th class="text-center">След. дата выплаты</th>
+          <th class="text-center">Через дней</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in future_rows %}
+        <tr>
+          <td>{{ r.partner_name }}</td>
+          <td>{{ r.cand_name }}</td>
+          <td>{{ r.job_title }}</td>
+          <td>{{ r.start_date }}</td>
+          <td class="text-end">{{ r.days_worked }}</td>
+          <td class="text-end">{{ '%.2f'|format(r.amount) }}</td>
+          <td class="text-center">
+            {% if r.next_pay_date %}
+              {{ r.next_pay_date.strftime('%d.%m.%Y') }}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if r.days_until_pay is not none %}
+              {{ r.days_until_pay }}
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">На выбранную дату нет кандидатов, отработавших 30+ дней без отметки об оплате.</div>
+{% endif %}
+{% endblock %}

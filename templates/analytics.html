@@ -1,0 +1,163 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1 class="hero-title mb-3">Аналитика</h1>
+
+<form method="get" class="card p-3 mb-3">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label">Месяц (YYYY-MM)</label>
+      <input type="text" name="ym" class="form-control" value="{{ current_filters.ym }}">
+      <div class="form-text">Например: {{ ym }}</div>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Рекрутёр</label>
+      <select name="recruiter_id" class="form-select">
+        <option value="">Все</option>
+        {% for r in recruiters %}
+        <option value="{{ r.id }}" {% if current_filters.recruiter_id == r.id %}selected{% endif %}>{{ r.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Партнёр</label>
+      <select name="partner_id" class="form-select">
+        <option value="">Все</option>
+        {% for p in partners %}
+        <option value="{{ p.id }}" {% if current_filters.partner_id == p.id %}selected{% endif %}>{{ p.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Вакансия</label>
+      <select name="job_id" class="form-select">
+        <option value="">Все</option>
+        {% for j in jobs %}
+        <option value="{{ j.id }}" {% if current_filters.job_id == j.id %}selected{% endif %}>{{ j.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="mt-3 d-flex gap-2">
+    <button class="btn btn-primary">Показать</button>
+    <a href="{{ url_for('main.analytics') }}" class="btn btn-outline-secondary">Сбросить</a>
+  </div>
+</form>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card p-3 text-center kpi-card">
+      <div class="label small text-muted">Старты за период</div>
+      <div class="value display-6">{{ total.starts }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 text-center kpi-card">
+      <div class="label small text-muted">Начислено партнёрам</div>
+      <div class="value h4 mb-0">{{ '%.2f'|format(total.partner_sum) }} EUR</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card p-3 text-center kpi-card">
+      <div class="label small text-muted">Начислено рекрутёрам</div>
+      <div class="value h4 mb-0">{{ '%.2f'|format(total.recruiter_sum) }} EUR</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="card p-3 h-100">
+      <h5 class="mb-2">По рекрутёрам</h5>
+      {% if by_recruiter %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Рекрутёр</th>
+              <th class="text-end">Старты</th>
+              <th class="text-end">Партнёр, EUR</th>
+              <th class="text-end">Рекрутёр, EUR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in by_recruiter %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ row.name }}</td>
+              <td class="text-end">{{ row.starts }}</td>
+              <td class="text-end">{{ '%.2f'|format(row.partner_sum) }}</td>
+              <td class="text-end">{{ '%.2f'|format(row.recruiter_sum) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted small mb-0">Нет данных по рекрутёрам для выбранных фильтров.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card p-3 h-100">
+      <h5 class="mb-2">По партнёрам</h5>
+      {% if by_partner %}
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Партнёр</th>
+              <th class="text-end">Старты</th>
+              <th class="text-end">Партнёр, EUR</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in by_partner %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ row.name }}</td>
+              <td class="text-end">{{ row.starts }}</td>
+              <td class="text-end">{{ '%.2f'|format(row.partner_sum) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted small mb-0">Нет данных по партнёрам для выбранных фильтров.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card p-3 mb-4">
+  <h5 class="mb-2">По вакансиям</h5>
+  {% if by_job %}
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Вакансия</th>
+          <th class="text-end">Старты</th>
+          <th class="text-end">Партнёр, EUR</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in by_job %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ row.title }}</td>
+          <td class="text-end">{{ row.starts }}</td>
+          <td class="text-end">{{ '%.2f'|format(row.partner_sum) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted small mb-0">Нет данных по вакансиям для выбранных фильтров.</p>
+  {% endif %}
+</div>
+{% endblock %}

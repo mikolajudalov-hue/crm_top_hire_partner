@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2 class="hero-title mb-3">Нужно подтвердить отработку месяца</h2>
+<p class="text-muted small mb-3">
+Здесь показываются кандидаты, по которым создано трудоустройство, но вы ещё не подтвердили,
+что человек честно отработал месяц.
+</p>
+<table class="table table-hover align-middle">
+<thead><tr><th>Дата выхода</th><th>Кандидат</th><th>Вакансия</th><th>Действия</th></tr></thead>
+<tbody>
+{% for pl, cand, job in rows %}
+<tr>
+<td>{{ pl.start_date }}</td>
+<td>{{ cand.full_name }}</td>
+<td>{{ job.title }}</td>
+<td>
+<form method="post" action="{{ url_for('finance.placement_confirm', placement_id=pl.id) }}">
+<button class="btn btn-success btn-sm">Подтвердить месяц</button>
+</form>
+</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}

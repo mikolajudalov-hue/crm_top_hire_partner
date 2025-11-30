@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block content %}
+<h2>Уведомления</h2>
+
+{% if notifications %}
+  {% if unread_notifications and unread_notifications > 0 %}
+    <form method="post" action="{{ url_for('notifications.mark_all_read') }}" style="margin-bottom: 12px;">
+      <button type="submit" class="btn btn-sm btn-primary">
+        Отметить все как прочитанные ({{ unread_notifications }})
+      </button>
+    </form>
+  {% endif %}
+
+  <ul style="list-style:none; padding:0;">
+  {% for n in notifications %}
+    <li style="padding:10px;margin-bottom:8px;border-radius:6px;
+               background-color: {{ 'white' if n.is_read else '#ffecec' }};
+               border:1px solid #ccc;">
+      <div style="font-size:14px;">{{ n.message }}</div>
+      <div style="font-size:11px;color:#888;">{{ n.created_at }}</div>
+      <div style="margin-top:6px;font-size:11px;">
+        {% if not n.is_read %}
+          <form method="post"
+                action="{{ url_for('notifications.mark_one_read', note_id=n.id) }}"
+                style="display:inline;">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+              Отметить прочитанным
+            </button>
+          </form>
+        {% else %}
+          <span style="color:#4caf50;">Прочитано</span>
+        {% endif %}
+      </div>
+    </li>
+  {% endfor %}
+  </ul>
+{% else %}
+  <p>Уведомлений пока нет.</p>
+{% endif %}
+{% endblock %}
