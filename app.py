@@ -1,7 +1,7 @@
 def create_app(testing=False):
     if testing:
         app.config["TESTING"] = True
-        pass
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     return app
 
 from datetime import date, datetime
@@ -295,10 +295,9 @@ PORT = int(os.environ.get("PORT", "8107"))
 def create_app(testing=False):
     from models import db
 
-    # Теперь не используем sqlite:///:memory: для тестирования,
-    # предполагая, что тестовая база будет настроена через DATABASE_URL
-    # или отдельный тестовый конфиг.
-    pass
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        "sqlite:///:memory:" if testing else app.config["SQLALCHEMY_DATABASE_URI"]
+    )
     app.config["TESTING"] = testing
 
     # ВАЖНО: ИНИЦИАЛИЗАЦИЯ БД ПОСЛЕ КОНФИГА
