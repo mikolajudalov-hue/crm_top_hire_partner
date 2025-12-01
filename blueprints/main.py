@@ -108,6 +108,24 @@ def index():
                                Placement.partner_paid == True).scalar() or 0.0)
         my_balance = total_accrued - total_paid
 
+        # Потенциальный заработок: кандидаты, которые вышли на работу < 30 дней назад и ещё не оплачены
+        potential_sum = 0.0
+        today = date.today()
+        potential_q = (db.session.query(Placement)
+                       .join(Candidate, Candidate.id==Placement.candidate_id)
+                       .filter(Candidate.submitter_id==u.id,
+                               Candidate.status=="Вышел на работу"))
+        for pl in potential_q.all():
+            if pl.partner_paid:
+                continue
+            try:
+                sd = datetime.strptime(pl.start_date, "%Y-%m-%d").date()
+            except Exception:
+                continue
+            days = (today - sd).days
+            if 0 <= days < 30:
+                potential_sum += pl.partner_commission
+
         partner_note = u.note or ""
         return render_template(
             "dash_partner.html",
@@ -122,6 +140,8 @@ def index():
                 "my_partner_sum": round(my_month_accrued, 2),
                 "my_partner_paid": round(my_month_paid, 2),
                 "my_partner_balance": round(my_balance, 2),
+                "my_total_earned": round(total_paid, 2),
+                "my_potential_next": round(potential_sum, 2),
             },
         )
     else:
