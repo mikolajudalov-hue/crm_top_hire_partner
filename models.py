@@ -464,6 +464,30 @@ def init_db():
 
     except Exception as e:
         print("INIT DB ERROR:", e)
+# =====================
+#      NOTIFICATIONS
+# =====================
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    message: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+def create_notification_for_users(user_ids, message: str) -> None:
+    """Создать уведомление для списка пользователей."""
+    unique_ids = set()
+    for uid in user_ids:
+        if uid:
+            unique_ids.add(uid)
+    for uid in unique_ids:
+        note = Notification(user_id=uid, message=message)
+        db.session.add(note)
+
 
 
 # ------------------------------------------------------
