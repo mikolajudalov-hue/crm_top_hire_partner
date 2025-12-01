@@ -57,7 +57,7 @@ def reports():
         .join(Candidate, Candidate.id == Placement.candidate_id)
         .join(Job, Job.id == Placement.job_id)
         .join(User, User.id == Placement.recruiter_id)
-        .filter(func.strftime("%Y-%m", Placement.start_date) == ym)
+        .filter(func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM') == ym)
         .order_by(Placement.start_date.asc())
         .all()
     )
@@ -146,7 +146,7 @@ def finance_partner_view(pid):
         text(
             """
             SELECT 
-              strftime('%Y-%m', p.start_date) AS ym,
+              to_char(to_date(p.start_date, 'YYYY-MM-DD'), 'YYYY-MM') AS ym,
               COUNT(p.id) AS starts,
               COALESCE(SUM(
                 CASE 
