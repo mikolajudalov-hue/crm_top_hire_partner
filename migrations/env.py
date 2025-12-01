@@ -22,8 +22,9 @@ target_metadata = Base.metadata
 
 def get_url() -> str:
     url = config.get_main_option("sqlalchemy.url")
-    # Теперь всегда используем строку подключения из конфига, которая берется из DATABASE_URL
-    return AppConfig.SQLALCHEMY_DATABASE_URI
+    if not url or url.strip() == "sqlite:///database.db":
+        return AppConfig.SQLALCHEMY_DATABASE_URI
+    return url
 
 
 def run_migrations_offline() -> None:

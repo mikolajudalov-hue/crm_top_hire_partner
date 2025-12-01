@@ -76,19 +76,19 @@ def index():
         # Метрики: подачи/старты/заработок
         my_submissions = db.session.query(func.count(Candidate.id)).filter(
             Candidate.submitter_id==u.id,
-            func.strftime("%Y-%m", Candidate.created_at)==ym,
+            func.to_char(Candidate.created_at, 'YYYY-MM')==ym,
             Candidate.status != "Удалён").scalar() or 0
 
         my_starts = (db.session.query(func.count(Placement.id))
                      .join(Candidate, Candidate.id==Placement.candidate_id)
                      .filter(Candidate.submitter_id==u.id,
-                             func.strftime("%Y-%m", Placement.start_date)==ym).scalar() or 0)
+                             func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM')==ym).scalar() or 0)
 
         # Начислено за месяц
         my_month_accrued = (db.session.query(func.coalesce(func.sum(Placement.partner_commission), 0.0))
                              .join(Candidate, Candidate.id==Placement.candidate_id)
                              .filter(Candidate.submitter_id==u.id,
-                                     func.strftime("%Y-%m", Placement.start_date)==ym).scalar() or 0.0)
+                                     func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM')==ym).scalar() or 0.0)
 
         # Выплачено за месяц
         my_month_paid = (db.session.query(func.coalesce(func.sum(Placement.partner_commission), 0.0))
@@ -96,7 +96,7 @@ def index():
                           .filter(Candidate.submitter_id==u.id,
                                   Placement.partner_paid == True,
                                   Placement.partner_paid_at.is_not(None),
-                                  func.strftime("%Y-%m", Placement.partner_paid_at)==ym).scalar() or 0.0)
+                                  func.to_char(Placement.partner_paid_at, 'YYYY-MM')==ym).scalar() or 0.0)
 
         # Общий баланс: начислено минус выплачено (за всё время)
         total_accrued = (db.session.query(func.coalesce(func.sum(Placement.partner_commission), 0.0))
@@ -163,13 +163,13 @@ def index():
                        .order_by(Placement.created_at.desc()).limit(50).all())
 
         month_starts = db.session.query(func.count(Placement.id)).filter(
-            func.strftime("%Y-%m", Placement.start_date)==ym).scalar() or 0
+            func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM')==ym).scalar() or 0
         month_submissions = db.session.query(func.count(Candidate.id)).filter(
-            func.strftime("%Y-%m", Candidate.created_at)==ym).scalar() or 0
+            func.to_char(Candidate.created_at, 'YYYY-MM')==ym).scalar() or 0
         partner_sum = db.session.query(func.coalesce(func.sum(Placement.partner_commission),0.0)).filter(
-            func.strftime("%Y-%m", Placement.start_date)==ym).scalar() or 0.0
+            func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM')==ym).scalar() or 0.0
         recruiter_sum = db.session.query(func.coalesce(func.sum(Placement.recruiter_commission),0.0)).filter(
-            func.strftime("%Y-%m", Placement.start_date)==ym).scalar() or 0.0
+            func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM')==ym).scalar() or 0.0
 
         # Персональные метрики рекрутёра (если текущий пользователь — рекрутёр)
         my_submissions = 0
@@ -185,7 +185,7 @@ def index():
                 .join(Placement, Placement.candidate_id == Candidate.id)
                 .filter(
                     Placement.recruiter_id == u.id,
-                    func.strftime("%Y-%m", Candidate.created_at) == ym,
+                    func.to_char(Candidate.created_at, 'YYYY-MM') == ym,
                 )
                 .scalar()
                 or 0
@@ -196,7 +196,7 @@ def index():
                 db.session.query(func.count(Placement.id))
                 .filter(
                     Placement.recruiter_id == u.id,
-                    func.strftime("%Y-%m", Placement.start_date) == ym,
+                    func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM') == ym,
                 )
                 .scalar()
                 or 0
@@ -207,7 +207,7 @@ def index():
                 db.session.query(func.coalesce(func.sum(Placement.partner_commission), 0.0))
                 .filter(
                     Placement.recruiter_id == u.id,
-                    func.strftime("%Y-%m", Placement.start_date) == ym,
+                    func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM') == ym,
                 )
                 .scalar()
                 or 0.0
@@ -216,7 +216,7 @@ def index():
                 db.session.query(func.coalesce(func.sum(Placement.recruiter_commission), 0.0))
                 .filter(
                     Placement.recruiter_id == u.id,
-                    func.strftime("%Y-%m", Placement.start_date) == ym,
+                    func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM') == ym,
                 )
                 .scalar()
                 or 0.0
@@ -238,7 +238,7 @@ def index():
             SELECT u.name as name, COUNT(p.id) as starts, COALESCE(SUM(p.recruiter_commission),0) as recruiter_sum
             FROM placements p
             JOIN users u ON u.id = p.recruiter_id
-            WHERE strftime('%Y-%m', p.start_date) = :ym
+            WHERE to_char(to_date(p.start_date, 'YYYY-MM-DD'), 'YYYY-MM') = :ym
             GROUP BY u.id ORDER BY starts DESC LIMIT 10
         """), {"ym": ym}).mappings().all()
 
@@ -247,7 +247,7 @@ def index():
             FROM placements p
             JOIN candidates c ON c.id = p.candidate_id
             JOIN users u ON u.id = c.submitter_id
-            WHERE strftime('%Y-%m', p.start_date) = :ym
+            WHERE to_char(to_date(p.start_date, 'YYYY-MM-DD'), 'YYYY-MM') = :ym
             GROUP BY u.id ORDER BY starts DESC LIMIT 10
         """), {"ym": ym}).mappings().all()
 
@@ -257,9 +257,9 @@ def index():
               p.name as partner_name,
               r.name as recruiter_name,
               COUNT(c.id) as submissions_total,
-              SUM(CASE WHEN c.id IS NOT NULL AND strftime('%Y-%m', c.created_at) = :ym THEN 1 ELSE 0 END) as submissions_month,
+              SUM(CASE WHEN c.id IS NOT NULL AND to_char(c.created_at, 'YYYY-MM') = :ym THEN 1 ELSE 0 END) as submissions_month,
               COUNT(pl.id) as starts_total,
-              SUM(CASE WHEN pl.id IS NOT NULL AND pl.start_date IS NOT NULL AND strftime('%Y-%m', pl.start_date) = :ym THEN 1 ELSE 0 END) as starts_month,
+              SUM(CASE WHEN pl.id IS NOT NULL AND pl.start_date IS NOT NULL AND to_char(to_date(pl.start_date, 'YYYY-MM-DD'), 'YYYY-MM') = :ym THEN 1 ELSE 0 END) as starts_month,
               MAX(c.created_at) as last_submission_at
             FROM users p
             LEFT JOIN users r ON r.id = p.assigned_recruiter_id
@@ -356,9 +356,9 @@ def index():
               r.id as id,
               r.name as recruiter_name,
               COUNT(DISTINCT p.id) as partners_total,
-              COUNT(DISTINCT CASE WHEN c.id IS NOT NULL AND strftime('%Y-%m', c.created_at) = :ym THEN p.id END) as active_partners_month,
-              SUM(CASE WHEN c.id IS NOT NULL AND strftime('%Y-%m', c.created_at) = :ym THEN 1 ELSE 0 END) as submissions_month,
-              SUM(CASE WHEN pl.id IS NOT NULL AND pl.start_date IS NOT NULL AND strftime('%Y-%m', pl.start_date) = :ym THEN 1 ELSE 0 END) as starts_month
+              COUNT(DISTINCT CASE WHEN c.id IS NOT NULL AND to_char(c.created_at, 'YYYY-MM') = :ym THEN p.id END) as active_partners_month,
+              SUM(CASE WHEN c.id IS NOT NULL AND to_char(c.created_at, 'YYYY-MM') = :ym THEN 1 ELSE 0 END) as submissions_month,
+              SUM(CASE WHEN pl.id IS NOT NULL AND pl.start_date IS NOT NULL AND to_char(to_date(pl.start_date, 'YYYY-MM-DD'), 'YYYY-MM') = :ym THEN 1 ELSE 0 END) as starts_month
             FROM users r
             LEFT JOIN users p ON p.assigned_recruiter_id = r.id AND p.role = 'partner'
             LEFT JOIN candidates c ON c.submitter_id = p.id
@@ -435,9 +435,9 @@ def my_partners():
         stats = db.session.execute(text("""
             SELECT
               COUNT(c.id) as submissions_total,
-              SUM(CASE WHEN c.id IS NOT NULL AND strftime('%Y-%m', c.created_at) = :ym THEN 1 ELSE 0 END) as submissions_month,
+              SUM(CASE WHEN c.id IS NOT NULL AND to_char(c.created_at, 'YYYY-MM') = :ym THEN 1 ELSE 0 END) as submissions_month,
               COUNT(pl.id) as starts_total,
-              SUM(CASE WHEN pl.id IS NOT NULL AND strftime('%Y-%m', pl.start_date) = :ym THEN 1 ELSE 0 END) as starts_month,
+              SUM(CASE WHEN pl.id IS NOT NULL AND to_char(to_date(pl.start_date, 'YYYY-MM-DD'), 'YYYY-MM') = :ym THEN 1 ELSE 0 END) as starts_month,
               MAX(c.created_at) as last_submission_at
             FROM candidates c
             LEFT JOIN placements pl ON pl.candidate_id = c.id
@@ -517,7 +517,7 @@ def my_partners():
     new_partners_q = db.session.query(func.count(RegistrationRequest.id)).filter(
         RegistrationRequest.role == "partner",
         RegistrationRequest.status == "approved",
-        func.strftime("%Y-%m", RegistrationRequest.created_at) == ym,
+        func.to_char(RegistrationRequest.created_at, 'YYYY-MM') == ym,
     )
     if g.user.role == "recruiter":
         new_partners_q = new_partners_q.filter(RegistrationRequest.assigned_recruiter_id == g.user.id)
@@ -583,7 +583,7 @@ def analytics():
     job_id = request.args.get("job_id", type=int)
 
     # Базовый фильтр по месяцу (по дате старта)
-    filters = [func.strftime("%Y-%m", Placement.start_date) == ym]
+    filters = [func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM') == ym]
 
     if recruiter_id:
         filters.append(Placement.recruiter_id == recruiter_id)

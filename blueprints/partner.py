@@ -206,7 +206,7 @@ def partner_earnings():
         text(
             """
             SELECT 
-              strftime('%Y-%m', p.start_date) AS ym,
+              to_char(to_date(p.start_date, 'YYYY-MM-DD'), 'YYYY-MM') AS ym,
               COUNT(p.id) AS starts,
               COALESCE(SUM(
                 CASE 
