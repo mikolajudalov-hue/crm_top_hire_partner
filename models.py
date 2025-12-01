@@ -394,7 +394,10 @@ def get_engine():
     if DB_URL:
         return create_engine(DB_URL, pool_pre_ping=True)
     else:
-        return create_engine("sqlite:///local.db", connect_args={"check_same_thread": False})
+        # Теперь используется строка подключения из конфига, которая берется из DATABASE_URL
+        # Если get_engine вызывается без конфига, это может быть проблемой.
+        # В данном случае, возвращаем None, чтобы явно указать на необходимость настройки.
+        return None
 
 
 engine = get_engine()
