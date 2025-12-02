@@ -392,13 +392,17 @@ DB_URL = os.environ.get("DATABASE_URL")
 
 def get_engine():
     if DB_URL:
-        return create_engine(DB_URL, pool_pre_ping=True)
+        return create_engine(
+            DB_URL,
+            pool_pre_ping=True,
+        )
     else:
-        return create_engine("sqlite:///local.db", connect_args={"check_same_thread": False})
+        return create_engine(
+            f"sqlite:///{DB_PATH}",
+            connect_args={"check_same_thread": False},
+            pool_pre_ping=True,
+        )
 
-
-engine = get_engine()
-Session = scoped_session(sessionmaker(bind=engine))
 
 
 # ------------------------------------------------------
