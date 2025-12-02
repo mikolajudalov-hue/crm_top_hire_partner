@@ -57,7 +57,7 @@ def reports():
         .join(Candidate, Candidate.id == Placement.candidate_id)
         .join(Job, Job.id == Placement.job_id)
         .join(User, User.id == Placement.recruiter_id)
-        .filter(func.to_char(func.to_date(Placement.start_date, 'YYYY-MM-DD'), 'YYYY-MM') == ym)
+        .filter(func.strftime("%Y-%m", Placement.start_date) == ym)
         .order_by(Placement.start_date.asc())
         .all()
     )
@@ -146,7 +146,7 @@ def finance_partner_view(pid):
         text(
             """
             SELECT 
-              to_char(to_date(p.start_date, 'YYYY-MM-DD'), 'YYYY-MM') AS ym,
+              strftime('%Y-%m', p.start_date) AS ym,
               COUNT(p.id) AS starts,
               COALESCE(SUM(
                 CASE 
@@ -209,13 +209,13 @@ def finance_payments():
                 WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 
                 THEN j.partner_fee_amount * COALESCE(j.promo_multiplier, 1)
                 ELSE 0 END AS amount,
-              (DATE(:as_of) - DATE(p.start_date)) AS days_worked
+              CAST(julianday(:as_of) - julianday(p.start_date) AS INTEGER) AS days_worked
             FROM placements p
             JOIN candidates c ON c.id = p.candidate_id
             JOIN jobs j ON j.id = p.job_id
             JOIN users u ON u.id = c.submitter_id
             WHERE p.start_date IS NOT NULL
-              AND (DATE(:as_of) - DATE(p.start_date)) >= 30
+              AND CAST(julianday(:as_of) - julianday(p.start_date) AS INTEGER) >= 30
               AND (p.partner_paid IS NULL OR p.partner_paid = 0)
             ORDER BY u.name ASC, p.start_date ASC
             """
@@ -417,13 +417,13 @@ def finance_partner_payment(partner_id):
                 WHEN j.partner_fee_amount IS NOT NULL AND j.partner_fee_amount > 0 
                 THEN j.partner_fee_amount * COALESCE(j.promo_multiplier, 1)
                 ELSE 0 END AS amount,
-              (DATE(:as_of) - DATE(p.start_date)) AS days_worked
+              CAST(julianday(:as_of) - julianday(p.start_date) AS INTEGER) AS days_worked
             FROM placements p
             JOIN candidates c ON c.id = p.candidate_id
             JOIN jobs j ON j.id = p.job_id
             JOIN users u ON u.id = c.submitter_id
             WHERE p.start_date IS NOT NULL
-              AND (DATE(:as_of) - DATE(p.start_date)) >= 30
+              AND CAST(julianday(:as_of) - julianday(p.start_date) AS INTEGER) >= 30
               AND (p.partner_paid IS NULL OR p.partner_paid = 0)
               AND u.id = :partner_id
             ORDER BY p.start_date ASC

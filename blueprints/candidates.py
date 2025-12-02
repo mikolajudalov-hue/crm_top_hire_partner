@@ -45,7 +45,6 @@ def candidates():
     status = request.args.get("status")
     min_fee = request.args.get("min_fee", type=float)
     max_fee = request.args.get("max_fee", type=float)
-    search_name = request.args.get("search")
 
     from sqlalchemy import select
     partner_fee_base = (Job.partner_fee_amount * Job.promo_multiplier).label("partner_fee_base")
@@ -76,8 +75,6 @@ def candidates():
         q = q.filter(Candidate.submitter_id==partner_id)
     if status:
         q = q.filter(Candidate.status==status)
-    if search_name:
-        q = q.filter(Candidate.full_name.ilike(f"%{search_name.strip()}%"))
     if min_fee is not None:
         q = q.filter(Job.partner_fee_amount>=min_fee)
     if max_fee is not None:
@@ -121,7 +118,6 @@ def candidates():
             "status": status,
             "min_fee": min_fee,
             "max_fee": max_fee,
-            "search": search_name,
         },
         unread_comments=unread_comments,
     )
