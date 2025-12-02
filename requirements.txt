@@ -3,7 +3,4 @@ SQLAlchemy==2.0.32
 Werkzeug==3.0.3
 gunicorn==22.0.0
 
-# PostgreSQL driver for Python 3.13 (supported on DigitalOcean)
-psycopg[binary]==3.3.0
-
-alembic==1.13.1
+alembic>=1.13.0

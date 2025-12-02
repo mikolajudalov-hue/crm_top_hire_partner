@@ -309,5 +309,14 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT, debug=True)
 
 
-
-# Duplicate /register route removed
+@app.route("/register", methods=["GET","POST"])
+def register():
+    if g.user:
+        return redirect(url_for("main.index"))
+    if request.method == "POST":
+        email = (request.form.get("email") or "").strip().lower()
+        req = RegistrationRequest(email=email)
+        db.session.add(req)
+        db.session.commit()
+        return redirect(url_for("login"))
+    return render_template("register.html")
